@@ -6,6 +6,7 @@ Drop-in workflow templates you can open in Flow.
 |------|--------------|
 | `ai-news-anchor.json` | Researches a topic via credible news sources (BBC, CNN, Reuters, AP) and produces a 60-second audio news segment in a professional anchor voice. |
 | `news-clip-maker.json` | Searches the latest news on a topic, writes a short script, and generates a 6-second video clip. |
+| `mail-skill.json` | Sends physical mail (letters and postcards) in the US via PostalForm. Supports user PDFs, auto-generated letters from text, and AI-generated postcard artwork. |
 
 ## How they get loaded
 
@@ -16,6 +17,7 @@ Drop-in workflow templates you can open in Flow.
 ```bash
 cp examples/workflows/ai-news-anchor.json .flow/workflows/
 cp examples/workflows/news-clip-maker.json .flow/workflows/
+cp examples/workflows/mail-skill.json .flow/workflows/
 ```
 
 Open the workflow, tweak the nodes, and export it as a Claude Code skill bundle.

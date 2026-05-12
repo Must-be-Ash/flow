@@ -1,0 +1,245 @@
+{
+  "id": "b2c4d6e8-1f3a-4b5c-9d8e-7a6b5c4d3e2f",
+  "slug": "mail-skill",
+  "name": "Mail Sender",
+  "description": "Send physical mail (letters and postcards) in the US via PostalForm using x402 USDC payments on Base.",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "purpose-mail",
+      "type": "purpose",
+      "position": {
+        "x": 340,
+        "y": -320
+      },
+      "data": {
+        "label": "Mail Sender",
+        "type": "purpose",
+        "name": "Mail Sender",
+        "description": "Send physical mail (letters and postcards) in the US via PostalForm. Supports user-provided PDFs, auto-generation from a text message, and AI-generated postcard artwork. Single recipient per send.",
+        "useCases": "Mail a letter to someone; send a postcard with a custom message or AI-generated image; mail a PDF document; auto-generate a letter from a short text message.",
+        "notFor": "Not for mass mail / bulk campaigns, international recipients (US-only delivery), or sending to multiple recipients in one call.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-mail-type",
+      "type": "input",
+      "position": {
+        "x": 340,
+        "y": -140
+      },
+      "data": {
+        "label": "Mail Type",
+        "type": "input",
+        "description": "Letter or postcard? Letters support color/double-sided/certified options. Postcards are always color, double-sided, standard class.",
+        "placeholder": "letter | postcard",
+        "saveAs": "mailType",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-recipient",
+      "type": "input",
+      "position": {
+        "x": 340,
+        "y": 40
+      },
+      "data": {
+        "label": "Recipient (US address)",
+        "type": "input",
+        "description": "Full name + US street address (line1, optional line2, city, 2-letter state, 5-digit ZIP). Recipient must be in the US — PostalForm delivers to US addresses only.",
+        "placeholder": "Jane Doe, 100 Main St, Springfield, IL 62701",
+        "saveAs": "recipient",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-content",
+      "type": "input",
+      "position": {
+        "x": 340,
+        "y": 220
+      },
+      "data": {
+        "label": "Content",
+        "type": "input",
+        "description": "Provide one of: (A) a public PDF URL, (B) a local PDF file path, (C) a text message that will be wrapped in a clean HTML letter template, or (D) for postcards, a short description of the artwork to AI-generate via recraft-v3.",
+        "placeholder": "PDF URL, file path, message, or image prompt",
+        "saveAs": "content",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-recraft",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 420
+      },
+      "data": {
+        "label": "Generate Postcard Artwork (recraft-v3)",
+        "description": "Optional — only when the user wants an AI-generated postcard. Generates a flat illustration via recraft-v3 on fal.ai. Strip card-related words from the prompt; default to a hand-drawn doodle aesthetic if no style specified. Auto-map size: 4x6/6x9 → 1800x1200, 11x6 → 2200x1200. Poll the request_id endpoint until COMPLETED, then download to ~/Downloads/postcard-artwork.webp and Read it inline before asking the user to confirm.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://fal.x402.paysponge.com",
+          "path": "/fal-ai/recraft-v3",
+          "method": "POST",
+          "price": {
+            "amount": "0.04",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:30:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-validate",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 620
+      },
+      "data": {
+        "label": "Validate Order (PostalForm)",
+        "description": "Pre-flight validation. Returns errors for malformed addresses, missing fields, or unsupported options. Show validation errors to the user in plain language and re-validate after fixes.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://postalform.com",
+          "path": "/api/machine/orders/validate",
+          "method": "POST",
+          "price": {
+            "amount": "0",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:30:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "instruction-confirm",
+      "type": "instruction",
+      "position": {
+        "x": 340,
+        "y": 820
+      },
+      "data": {
+        "label": "Confirm Before Sending",
+        "type": "instruction",
+        "instruction": "Show a one-screen summary to the user before payment:\n- Mail type, options (letter color/class/certified, postcard size)\n- Recipient name + address\n- Sender name + address (read from data/sender.md if saved)\n- Content source (PDF URL, auto-generated letter, or AI artwork preview)\n- Estimated cost: ~$1-3 USDC\n\nWait for explicit user confirmation. Do not auto-proceed.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-send",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 1020
+      },
+      "data": {
+        "label": "Send Mail (PostalForm)",
+        "description": "Submit the validated order. PostalForm charges via x402 USDC on Base. Returns 202 with an order_id on success. Generate a fresh UUID v4 for request_id.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://postalform.com",
+          "path": "/api/machine/orders",
+          "method": "POST",
+          "price": {
+            "amount": "1-3",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:30:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-status",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 1220
+      },
+      "data": {
+        "label": "Check Status (PostalForm)",
+        "description": "Fetch current step / tracking for the submitted order_id. Report initial status to the user — no need to poll repeatedly. The user can re-run this later for updates.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://postalform.com",
+          "path": "/api/machine/orders/{order_id}",
+          "method": "GET",
+          "price": {
+            "amount": "0",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:30:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "output-confirmation",
+      "type": "output",
+      "position": {
+        "x": 340,
+        "y": 1420
+      },
+      "data": {
+        "label": "Confirmation + Tracking",
+        "type": "output",
+        "description": "Order ID, current status, estimated delivery, and (for letters) tracking URL. After successful send, save new recipient to data/recipient_<firstname_lastname>.md and sender to data/sender.md.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "purpose-mail",         "target": "input-mail-type",     "type": "animated" },
+    { "id": "e2", "source": "input-mail-type",      "target": "input-recipient",     "type": "animated" },
+    { "id": "e3", "source": "input-recipient",      "target": "input-content",       "type": "animated" },
+    { "id": "e4", "source": "input-content",        "target": "x402-recraft",        "type": "animated" },
+    { "id": "e5", "source": "x402-recraft",         "target": "x402-validate",       "type": "animated" },
+    { "id": "e6", "source": "x402-validate",        "target": "instruction-confirm", "type": "animated" },
+    { "id": "e7", "source": "instruction-confirm",  "target": "x402-send",           "type": "animated" },
+    { "id": "e8", "source": "x402-send",            "target": "x402-status",         "type": "animated" },
+    { "id": "e9", "source": "x402-status",          "target": "output-confirmation", "type": "animated" }
+  ],
+  "createdAt": "2026-05-12T22:30:00.000Z",
+  "updatedAt": "2026-05-12T22:30:00.000Z"
+}
