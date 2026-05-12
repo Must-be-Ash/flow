@@ -1,0 +1,242 @@
+{
+  "id": "c3d5e7f9-2a4b-4c6d-8e9f-1a2b3c4d5e6f",
+  "slug": "recruit-skill",
+  "name": "Recruit Sourcer",
+  "description": "Source and enrich candidate shortlists using x402 pay-per-call endpoints (Apollo, Tomba, Exa). Output is a ranked, evidence-backed candidate report.",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "purpose-recruit",
+      "type": "purpose",
+      "position": {
+        "x": 340,
+        "y": -320
+      },
+      "data": {
+        "label": "Recruit Sourcer",
+        "type": "purpose",
+        "name": "Recruit Sourcer",
+        "description": "Run a deep candidate search for a recruiter using x402 pay-per-call endpoints on Base USDC via the awal wallet. Source wide, filter, enrich the top 20 with verified business emails, then rank and write a markdown report.",
+        "useCases": "Source candidates for a tech role (engineer, ML, data, infra, security); source GTM (AE, SDR, marketing, BD, CSM, RevOps); build a ranked shortlist with verified contact info; research who could fit a specific role.",
+        "notFor": "Not for outreach / sending email; not for background checks; not for executive-only searches without recruiter confirmation. Research only.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-brief",
+      "type": "input",
+      "position": {
+        "x": 340,
+        "y": -140
+      },
+      "data": {
+        "label": "Role Brief",
+        "type": "input",
+        "description": "Role type (tech | GTM), seniority (IC / senior / staff / lead / manager / director), must-haves (skills, frameworks, industries), nice-to-haves (tenure, education, prior employers), location + work model (remote/hybrid/onsite), headcount target (default 15-20). Ask one clarifying question if a must-have is ambiguous.",
+        "placeholder": "Senior backend engineer, Go + distributed systems, NYC or remote, 20 candidates",
+        "saveAs": "brief",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-playbook",
+      "type": "instruction",
+      "position": {
+        "x": 340,
+        "y": 60
+      },
+      "data": {
+        "label": "Pick Playbook (Tech vs GTM)",
+        "type": "instruction",
+        "instruction": "Read the relevant playbook section in references/playbooks.md before running calls.\n\n- Tech roles → Exa LinkedIn + GitHub + personal site for sourcing; Apollo via Orthogonal for one-call enrichment with verified email.\n- GTM roles → free Apollo people-search for universe scan; Apollo via Orthogonal for one-call enrichment.\n\nPlan 2-4 parallel sourcing calls. Aim for 40-80 raw hits before filtering.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-source-apollo",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 260
+      },
+      "data": {
+        "label": "Source — Apollo People Search",
+        "description": "Free universe scan via Apollo via Orthogonal. Use for GTM roles primarily; can complement Exa for tech. Pass person_titles, locations, organization filters from the brief. Returns paginated candidate hits.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402.orth.sh",
+          "path": "/apollo/api/v1/mixed_people/api_search",
+          "method": "POST",
+          "price": {
+            "amount": "0",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:45:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-source-exa",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 460
+      },
+      "data": {
+        "label": "Source — Exa Web Search (LinkedIn / GitHub)",
+        "description": "Use for tech roles to surface LinkedIn profiles, GitHub bios, and personal sites that Apollo misses. Run 2-3 narrow neural queries (e.g. 'site:linkedin.com/in/ <stack> <city>'). Cheap per-query but quality depends on prompt design.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": {
+            "amount": "0.01",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:45:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "instruction-filter",
+      "type": "instruction",
+      "position": {
+        "x": 340,
+        "y": 660
+      },
+      "data": {
+        "label": "Filter, Dedupe, Top 20",
+        "type": "instruction",
+        "instruction": "From the 40-80 raw hits:\n- Drop anyone missing the must-haves\n- Dedupe by (LinkedIn URL || full name + current employer)\n- Keep top 20 by initial fit signals (use the playbook's ranking heuristics)\n\nTrack running USDC spend so far. Surface the survivors as a working list before enrichment.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-enrich-apollo",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 860
+      },
+      "data": {
+        "label": "Enrich — Apollo /people/match",
+        "description": "One call per survivor. Pass linkedin_url and reveal_personal_emails: true. Returns verified business email, full profile, current title, organization with domain, seniority. ~$0.01 per candidate × 20 = ~$0.20 total. Do NOT pass reveal_phone_number without webhook_url (Apollo returns 400).",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402.orth.sh",
+          "path": "/apollo/api/v1/people/match",
+          "method": "POST",
+          "price": {
+            "amount": "0.01",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:45:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-tomba-fallback",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 1060
+      },
+      "data": {
+        "label": "Email Fallback — Tomba /v1/linkedin",
+        "description": "Backup for any candidate Apollo /people/match returned without a deliverable email. Pass the LinkedIn URL; Tomba returns email + role data. If still no email, fall back to /v1/email-format → construct → /v1/email-verifier (each $0.01). Mark unrecoverable candidates as 'LinkedIn only — recruiter to InMail'.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402.orth.sh",
+          "path": "/tomba/v1/linkedin",
+          "method": "GET",
+          "price": {
+            "amount": "0.01",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T22:45:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "instruction-rank",
+      "type": "instruction",
+      "position": {
+        "x": 340,
+        "y": 1260
+      },
+      "data": {
+        "label": "Rank Candidates 0-10",
+        "type": "instruction",
+        "instruction": "Score each enriched candidate 0-10 against the brief using the playbook's signal weights (skills match, seniority fit, location, recency of relevant activity). Sort descending. Break ties by recency of relevant activity (recent shipped projects, recent posts, current employer tenure). Cite the evidence inline so the recruiter can verify.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "output-report",
+      "type": "output",
+      "position": {
+        "x": 340,
+        "y": 1460
+      },
+      "data": {
+        "label": "Ranked Candidate Report",
+        "type": "output",
+        "description": "Markdown report following assets/report-template.md. One section per candidate (rank, name, current title/company, LinkedIn URL, verified email, score 0-10 with reasoning, evidence links). Include running total USDC spend at the bottom. Save to working dir as candidates-<role>-<YYYYMMDD>.md.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "purpose-recruit",      "target": "input-brief",          "type": "animated" },
+    { "id": "e2", "source": "input-brief",          "target": "instruction-playbook", "type": "animated" },
+    { "id": "e3", "source": "instruction-playbook", "target": "x402-source-apollo",   "type": "animated" },
+    { "id": "e4", "source": "instruction-playbook", "target": "x402-source-exa",      "type": "animated" },
+    { "id": "e5", "source": "x402-source-apollo",   "target": "instruction-filter",   "type": "animated" },
+    { "id": "e6", "source": "x402-source-exa",      "target": "instruction-filter",   "type": "animated" },
+    { "id": "e7", "source": "instruction-filter",   "target": "x402-enrich-apollo",   "type": "animated" },
+    { "id": "e8", "source": "x402-enrich-apollo",   "target": "x402-tomba-fallback",  "type": "animated" },
+    { "id": "e9", "source": "x402-tomba-fallback",  "target": "instruction-rank",     "type": "animated" },
+    { "id": "e10", "source": "instruction-rank",    "target": "output-report",        "type": "animated" }
+  ],
+  "createdAt": "2026-05-12T22:45:00.000Z",
+  "updatedAt": "2026-05-12T22:45:00.000Z"
+}
