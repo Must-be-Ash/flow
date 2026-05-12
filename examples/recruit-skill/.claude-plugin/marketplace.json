@@ -1,0 +1,27 @@
+{
+  "name": "must-be-ash",
+  "owner": {
+    "name": "Must-be-Ash",
+    "url": "https://github.com/Must-be-Ash"
+  },
+  "plugins": [
+    {
+      "name": "recruit",
+      "source": "./plugins/recruit",
+      "description": "Deep candidate sourcing for recruiters using x402 pay-per-call endpoints (Apollo, Exa, Clado, Hunter, Minerva, social) on Base USDC via the awal wallet. Outputs a ranked, evidence-backed candidate report. Tech and GTM recruiting.",
+      "version": "0.1.0",
+      "category": "agents-and-skills",
+      "keywords": [
+        "recruiting",
+        "sourcing",
+        "x402",
+        "awal",
+        "base",
+        "usdc",
+        "agent-payments",
+        "apollo",
+        "exa"
+      ]
+    }
+  ]
+}

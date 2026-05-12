@@ -1,0 +1,13 @@
+{
+  "name": "mail",
+  "version": "0.1.0",
+  "description": "Send physical mail (letters and postcards) in the US via PostalForm using x402 USDC payments on Base from the awal agent wallet. Supports user-provided PDFs and auto-generation from text. Single recipient per send.",
+  "author": {
+    "name": "Must-be-Ash",
+    "url": "https://github.com/Must-be-Ash"
+  },
+  "homepage": "https://github.com/Must-be-Ash/mail-skill",
+  "repository": "https://github.com/Must-be-Ash/mail-skill",
+  "license": "MIT",
+  "keywords": ["mail", "postcard", "letter", "postalform", "x402", "awal", "base", "usdc", "agent-payments", "physical-mail"]
+}

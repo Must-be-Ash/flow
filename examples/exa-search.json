@@ -1,0 +1,55 @@
+{
+  "flowVersion": "0.1.0",
+  "exportedAt": "2026-05-10T00:00:00.000Z",
+  "origins": ["https://stableenrich.dev"],
+  "workflow": {
+    "id": "example-exa-search",
+    "name": "Exa Search",
+    "slug": "exa-search",
+    "description": "Simple Exa web search — a hello-world x402 workflow at $0.01 per call",
+    "version": 1,
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "type": "trigger",
+        "position": { "x": 0, "y": 0 },
+        "data": {
+          "label": "Manual Trigger",
+          "type": "trigger",
+          "config": { "triggerType": "Manual" }
+        }
+      },
+      {
+        "id": "search-1",
+        "type": "action",
+        "position": { "x": 300, "y": 0 },
+        "data": {
+          "label": "Exa Search",
+          "type": "x402",
+          "spec": {
+            "kind": "x402",
+            "origin": "https://stableenrich.dev",
+            "path": "/api/exa/search",
+            "method": "POST",
+            "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string", "description": "Search query" },
+                "numResults": { "type": "number", "description": "Number of results", "default": 5 }
+              },
+              "required": ["query"]
+            },
+            "source": { "discoveredAt": "2026-05-10T00:00:00.000Z", "via": "manual" }
+          },
+          "config": { "query": "latest AI research papers" }
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e1", "source": "trigger-1", "target": "search-1" }
+    ],
+    "createdAt": "2026-05-10T00:00:00.000Z",
+    "updatedAt": "2026-05-10T00:00:00.000Z"
+  }
+}

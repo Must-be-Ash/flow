@@ -1,0 +1,169 @@
+{
+  "id": "a103ce60-82d4-478b-a02c-a5fcb6001d44",
+  "slug": "ai-news-anchor",
+  "version": 16,
+  "nodes": [
+    {
+      "id": "8okPZvw7r3dn6pFiMjbEj",
+      "type": "purpose",
+      "position": {
+        "x": 340,
+        "y": -320
+      },
+      "data": {
+        "label": "AI News Anchor",
+        "type": "purpose",
+        "name": "AI News Anchor",
+        "description": "Research a topic using credible sources like BBC, CNN, Reuters, and AP, then generate a polished 60-second audio news segment with a professional anchor voice.",
+        "useCases": "Get a quick audio briefing on any news topic; create a daily news clip; research and summarize breaking news into a spoken report",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-topic",
+      "type": "input",
+      "position": {
+        "x": 340,
+        "y": -140
+      },
+      "data": {
+        "label": "News Topic",
+        "type": "input",
+        "description": "The topic or event to research and report on (e.g. 'AI regulation in Europe', 'SpaceX latest launch')",
+        "placeholder": "Enter the news topic to cover...",
+        "saveAs": "topic",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "Swl4HNiC21MImp7Tq8Xvl",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 60
+      },
+      "data": {
+        "label": "Research from Credible Sources",
+        "description": "Search for the latest news on the topic using Perplexity Sonar. Focus on results from BBC, CNN, Reuters, AP, and other credible news outlets. Retrieve key facts, quotes, and context.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://perplexity.mpp.paywithlocus.com",
+          "path": "/perplexity/search",
+          "method": "POST",
+          "price": {
+            "amount": "0-0 USD",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T17:54:41.322Z",
+            "via": "search"
+          }
+        }
+      }
+    },
+    {
+      "id": "instruction-script",
+      "type": "instruction",
+      "position": {
+        "x": 340,
+        "y": 280
+      },
+      "data": {
+        "label": "Write 60-Second News Script",
+        "type": "instruction",
+        "instruction": "Based on the research results, write a professional 60-second news anchor script (approximately 150 words). Structure it as: strong opening headline sentence, 3-4 key facts with attribution to sources (e.g. 'According to Reuters...'), one brief quote or expert opinion if available, and a closing summary sentence. Use clear, authoritative broadcast language. No filler words. The script should sound natural when read aloud.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "tts-elevenlabs",
+      "type": "x402",
+      "position": {
+        "x": 340,
+        "y": 480
+      },
+      "data": {
+        "label": "Generate Anchor Audio (ElevenLabs)",
+        "description": "Convert the 60-second news script into natural-sounding spoken audio using ElevenLabs TTS. Returns a base64-encoded MP3 file of the news segment.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402helper.xyz",
+          "path": "/v1/tools/text-to-speech",
+          "method": "POST",
+          "price": {
+            "amount": "0.013",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {},
+          "source": {
+            "discoveredAt": "2026-05-12T17:55:00.000Z",
+            "via": "search"
+          }
+        }
+      }
+    },
+    {
+      "id": "output-audio",
+      "type": "output",
+      "position": {
+        "x": 340,
+        "y": 680
+      },
+      "data": {
+        "label": "Audio News Segment",
+        "type": "output",
+        "description": "The final audio news segment — a 60-second MP3 of the anchor reading the researched script. Delivered as a base64 MP3 or audio URL.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "8okPZvw7r3dn6pFiMjbEj",
+      "target": "input-topic",
+      "type": "animated"
+    },
+    {
+      "id": "e2",
+      "source": "input-topic",
+      "target": "Swl4HNiC21MImp7Tq8Xvl",
+      "type": "animated"
+    },
+    {
+      "id": "e3",
+      "source": "Swl4HNiC21MImp7Tq8Xvl",
+      "target": "instruction-script",
+      "type": "animated"
+    },
+    {
+      "id": "e4",
+      "source": "instruction-script",
+      "target": "tts-elevenlabs",
+      "type": "animated"
+    },
+    {
+      "id": "e5",
+      "source": "tts-elevenlabs",
+      "target": "output-audio",
+      "type": "animated"
+    }
+  ],
+  "createdAt": "2026-05-12T15:45:49.893Z",
+  "updatedAt": "2026-05-12T17:57:12.956Z",
+  "name": "AI News Anchor",
+  "description": "Research a topic using credible news sources and generate a 60-second audio news segment with a professional anchor voice."
+}

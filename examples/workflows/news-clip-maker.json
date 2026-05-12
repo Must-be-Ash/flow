@@ -1,0 +1,286 @@
+{
+  "id": "3f0568b4-4682-4a9a-9203-64a62b2940d5",
+  "slug": "news-to-clip",
+  "version": 32,
+  "nodes": [
+    {
+      "id": "purpose-1",
+      "type": "purpose",
+      "position": {
+        "x": 0,
+        "y": 150
+      },
+      "data": {
+        "type": "purpose",
+        "label": "News Clip Maker",
+        "name": "News Clip Maker",
+        "description": "Takes a topic from the user, searches for the latest news, writes a short video script, generates a 6-second video clip, and downloads it for viewing.",
+        "useCases": "Use when the user asks to make a news clip, create a short video about a topic, or turn headlines into a video.",
+        "notFor": "Not for long-form video editing, live streaming, or full documentary production.",
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 256,
+        "height": 143
+      },
+      "selected": false
+    },
+    {
+      "id": "input-topic",
+      "type": "input",
+      "position": {
+        "x": 350,
+        "y": 150
+      },
+      "data": {
+        "type": "input",
+        "label": "Topic",
+        "prompt": "What topic do you want a news clip about?",
+        "hints": "Accept any topic — a company name, event, person, or trend.",
+        "required": true,
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 150,
+        "height": 106
+      },
+      "selected": false
+    },
+    {
+      "id": "service-twitter",
+      "type": "service",
+      "position": {
+        "x": 700,
+        "y": 50
+      },
+      "data": {
+        "type": "service",
+        "label": "Search Twitter/X for latest posts",
+        "description": "Search Twitter/X for the most recent tweets about the topic to capture real-time social reaction and breaking news.",
+        "notes": "Look for high-engagement tweets in the last 24 hours. Prefer verified accounts and journalists regarding Sponge Wallet. I want to know the latest sponge wallet announcement ",
+        "endpoint": {
+          "origin": "https://twitter-scraper-production-a1e8.up.railway.app",
+          "path": "/api/search",
+          "method": "POST",
+          "price": "0.01",
+          "summary": "Search Twitter/X for tweets"
+        },
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 104
+      },
+      "selected": false
+    },
+    {
+      "id": "service-search",
+      "type": "service",
+      "position": {
+        "x": 700,
+        "y": 220
+      },
+      "data": {
+        "type": "service",
+        "label": "Search the web for news",
+        "description": "Search the web for the latest news articles about the topic to complement the Twitter results.",
+        "notes": "what's the news from the 24 hours regarding Sponge Wallet. I want to know the latest sponge wallet announcement. Prefer news sources over blog posts.",
+        "endpoint": {
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": "0.01",
+          "summary": "Exa neural web search"
+        },
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 104
+      },
+      "selected": false
+    },
+    {
+      "id": "instruction-script",
+      "type": "instruction",
+      "position": {
+        "x": 1050,
+        "y": 130
+      },
+      "data": {
+        "type": "instruction",
+        "label": "Write video script",
+        "instruction": "Combine the Twitter posts and web search results to write a short, punchy script for a 6-second news clip:\n- Open with a one-line headline\n- Include 1-2 key facts or quotes from tweets\n- End with a hook or takeaway\n- 20 words max (it's only 6 seconds)\n\nAlso write a visual description: what should the viewer see?",
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 121
+      },
+      "selected": false
+    },
+    {
+      "id": "service-video",
+      "type": "service",
+      "position": {
+        "x": 1400,
+        "y": 130
+      },
+      "data": {
+        "type": "service",
+        "label": "Generate video with Veo 3.1",
+        "description": "Generate a short video clip using Google's Veo 3.1 model from the visual description.",
+        "notes": "Use the visual description as the prompt. News-clip style, 5-6 seconds. Veo 3.1 supports audio — optionally add a voiceover of the script. Poll the jobId until complete.",
+        "endpoint": {
+          "origin": "https://stablestudio.dev",
+          "path": "/api/generate/veo-3.1/generate",
+          "method": "POST",
+          "price": "0-10.00 USD",
+          "summary": "Generate high-quality AI videos up to 1080p using Google's Veo 3.1 model"
+        },
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 104
+      },
+      "selected": false
+    },
+    {
+      "id": "instruction-poll",
+      "type": "instruction",
+      "position": {
+        "x": 1737.6866119510883,
+        "y": 54.47759565414973
+      },
+      "data": {
+        "type": "instruction",
+        "label": "Wait for video",
+        "instruction": "The video generation returns a jobId. Poll the status endpoint every 5 seconds until complete. Do not resubmit. This can take 1-3 minutes.",
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 121
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "instruction-download",
+      "type": "instruction",
+      "position": {
+        "x": 1734.467072264292,
+        "y": 247.48133368625287
+      },
+      "data": {
+        "type": "instruction",
+        "label": "Download and show",
+        "instruction": "Once the video is ready, download it from the provided URL. Save it locally and show the video to the user. Always show the result — do not skip.",
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 224,
+        "height": 121
+      },
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "output-result",
+      "type": "output",
+      "position": {
+        "x": 2100,
+        "y": 130
+      },
+      "data": {
+        "type": "output",
+        "label": "News clip ready",
+        "format": "Video file + script text",
+        "confirm": false,
+        "status": "idle",
+        "config": {}
+      },
+      "measured": {
+        "width": 150,
+        "height": 91
+      },
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "purpose-1",
+      "target": "input-topic",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e2",
+      "source": "input-topic",
+      "target": "service-twitter",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e2b",
+      "source": "input-topic",
+      "target": "service-search",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e3a",
+      "source": "service-twitter",
+      "target": "instruction-script",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e3b",
+      "source": "service-search",
+      "target": "instruction-script",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e4",
+      "source": "instruction-script",
+      "target": "service-video",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e5",
+      "source": "service-video",
+      "target": "instruction-poll",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e6",
+      "source": "instruction-poll",
+      "target": "instruction-download",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    },
+    {
+      "id": "e7",
+      "source": "instruction-download",
+      "target": "output-result",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    }
+  ],
+  "createdAt": "2026-05-12T00:33:43.901Z",
+  "updatedAt": "2026-05-12T22:10:49.834Z"
+}

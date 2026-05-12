@@ -1,0 +1,108 @@
+{
+  "flowVersion": "0.1.0",
+  "exportedAt": "2026-05-10T00:00:00.000Z",
+  "origins": ["https://stableenrich.dev"],
+  "workflow": {
+    "id": "example-recruit-mini",
+    "name": "Recruit Mini",
+    "slug": "recruit-mini",
+    "description": "Search for candidates via Apollo, then enrich the top 5 — recruit-skill style",
+    "version": 1,
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "type": "trigger",
+        "position": { "x": 0, "y": 0 },
+        "data": {
+          "label": "Manual Trigger",
+          "type": "trigger",
+          "config": { "triggerType": "Manual" }
+        }
+      },
+      {
+        "id": "apollo-search",
+        "type": "action",
+        "position": { "x": 300, "y": 0 },
+        "data": {
+          "label": "Apollo People Search",
+          "type": "x402",
+          "spec": {
+            "kind": "x402",
+            "origin": "https://stableenrich.dev",
+            "path": "/api/apollo/search",
+            "method": "POST",
+            "price": { "amount": "0.02", "asset": "USDC", "chain": "base" },
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string", "description": "Search query (job title, skills, etc.)" },
+                "limit": { "type": "number", "description": "Max results", "default": 10 }
+              },
+              "required": ["query"]
+            },
+            "source": { "discoveredAt": "2026-05-10T00:00:00.000Z", "via": "manual" }
+          },
+          "config": { "query": "senior software engineer", "limit": 5 }
+        }
+      },
+      {
+        "id": "loop-enrich",
+        "type": "action",
+        "position": { "x": 600, "y": 0 },
+        "data": {
+          "label": "For Each Candidate",
+          "type": "logic",
+          "subtype": "loop",
+          "config": {
+            "items": "{{@apollo-search:Apollo People Search.results}}",
+            "maxIterations": 5
+          }
+        }
+      },
+      {
+        "id": "enrich",
+        "type": "action",
+        "position": { "x": 900, "y": 0 },
+        "data": {
+          "label": "Enrich Profile",
+          "type": "x402",
+          "spec": {
+            "kind": "x402",
+            "origin": "https://stableenrich.dev",
+            "path": "/api/apollo/enrich",
+            "method": "POST",
+            "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "email": { "type": "string" },
+                "linkedinUrl": { "type": "string" }
+              }
+            },
+            "source": { "discoveredAt": "2026-05-10T00:00:00.000Z", "via": "manual" }
+          },
+          "config": {}
+        }
+      },
+      {
+        "id": "merge-results",
+        "type": "action",
+        "position": { "x": 1200, "y": 0 },
+        "data": {
+          "label": "Merge Results",
+          "type": "logic",
+          "subtype": "merge",
+          "config": { "strategy": "wait-all" }
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e1", "source": "trigger-1", "target": "apollo-search" },
+      { "id": "e2", "source": "apollo-search", "target": "loop-enrich" },
+      { "id": "e3", "source": "loop-enrich", "target": "enrich" },
+      { "id": "e4", "source": "enrich", "target": "merge-results" }
+    ],
+    "createdAt": "2026-05-10T00:00:00.000Z",
+    "updatedAt": "2026-05-10T00:00:00.000Z"
+  }
+}

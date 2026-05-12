@@ -1,0 +1,21 @@
+# Example workflows
+
+Drop-in workflow templates you can open in Flow.
+
+| File | What it does |
+|------|--------------|
+| `ai-news-anchor.json` | Researches a topic via credible news sources (BBC, CNN, Reuters, AP) and produces a 60-second audio news segment in a professional anchor voice. |
+| `news-clip-maker.json` | Searches the latest news on a topic, writes a short script, and generates a 6-second video clip. |
+
+## How they get loaded
+
+**On first launch**, Flow auto-seeds these examples into your local `.flow/workflows/` directory so a fresh clone shows them in the workflow switcher with no setup. Seeding only happens once — the very first time `.flow/workflows/` is created. If you later delete one of the seeded workflows, it won't reappear.
+
+**To install manually** (or to re-add after deleting), copy the file in and refresh the app:
+
+```bash
+cp examples/workflows/ai-news-anchor.json .flow/workflows/
+cp examples/workflows/news-clip-maker.json .flow/workflows/
+```
+
+Open the workflow, tweak the nodes, and export it as a Claude Code skill bundle.

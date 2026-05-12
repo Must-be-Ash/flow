@@ -1,0 +1,17 @@
+{
+  "name": "must-be-ash",
+  "owner": {
+    "name": "Must-be-Ash",
+    "url": "https://github.com/Must-be-Ash"
+  },
+  "plugins": [
+    {
+      "name": "ai-news-anchor",
+      "source": "./plugins/ai-news-anchor",
+      "description": "Research any topic using credible news sources (BBC, CNN, Reuters, AP) and generate a polished 60-second audio news segment with a professional anchor voice. Outputs an MP3 file plus a script for reference.",
+      "version": "0.1.0",
+      "category": "agents-and-skills",
+      "keywords": ["news", "audio", "anchor", "elevenlabs", "perplexity", "x402", "mpp", "tempo", "base", "usdc", "agent-payments"]
+    }
+  ]
+}

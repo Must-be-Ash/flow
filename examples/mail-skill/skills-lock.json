@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "mail": {
+      "source": "Must-be-Ash/mail-skill",
+      "sourceType": "github",
+      "computedHash": "7b1970f6a3e329340a342e2700d378a0e979807b874fc7fe5390e01cda7ab1bb"
+    }
+  }
+}

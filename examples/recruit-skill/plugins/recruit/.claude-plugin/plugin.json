@@ -1,0 +1,24 @@
+{
+  "name": "recruit",
+  "version": "0.1.0",
+  "description": "Run a deep candidate search for a recruiter using x402 pay-per-call endpoints (Apollo, Exa, Clado, Hunter, Minerva, social) on Base USDC via the awal wallet. Outputs a ranked, evidence-backed candidate report. Tech (engineering, ML) and GTM (sales, marketing, BD) recruiting are first-class.",
+  "author": {
+    "name": "Must-be-Ash",
+    "url": "https://github.com/Must-be-Ash"
+  },
+  "homepage": "https://github.com/Must-be-Ash/recruit-skill",
+  "repository": "https://github.com/Must-be-Ash/recruit-skill",
+  "license": "MIT",
+  "keywords": [
+    "recruiting",
+    "sourcing",
+    "x402",
+    "awal",
+    "base",
+    "usdc",
+    "agent-payments",
+    "apollo",
+    "exa",
+    "candidate-search"
+  ]
+}

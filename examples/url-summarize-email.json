@@ -1,0 +1,68 @@
+{
+  "flowVersion": "0.1.0",
+  "exportedAt": "2026-05-10T00:00:00.000Z",
+  "origins": ["https://stableenrich.dev", "https://stableemail.dev"],
+  "workflow": {
+    "id": "example-url-summarize",
+    "name": "URL Summarize & Email",
+    "slug": "url-summarize-email",
+    "description": "Scrape a URL with Firecrawl, summarize the content, then email the summary",
+    "version": 1,
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "type": "trigger",
+        "position": { "x": 0, "y": 0 },
+        "data": {
+          "label": "Manual Trigger",
+          "type": "trigger",
+          "config": { "triggerType": "Manual" }
+        }
+      },
+      {
+        "id": "scrape-1",
+        "type": "action",
+        "position": { "x": 300, "y": 0 },
+        "data": {
+          "label": "Scrape URL",
+          "type": "x402",
+          "spec": {
+            "kind": "x402",
+            "origin": "https://stableenrich.dev",
+            "path": "/api/firecrawl/scrape",
+            "method": "POST",
+            "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string", "description": "URL to scrape" }
+              },
+              "required": ["url"]
+            },
+            "source": { "discoveredAt": "2026-05-10T00:00:00.000Z", "via": "manual" }
+          },
+          "config": { "url": "https://example.com" }
+        }
+      },
+      {
+        "id": "transform-1",
+        "type": "action",
+        "position": { "x": 600, "y": 0 },
+        "data": {
+          "label": "Extract Content",
+          "type": "data",
+          "subtype": "transform",
+          "config": {
+            "expression": "$.content"
+          }
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e1", "source": "trigger-1", "target": "scrape-1" },
+      { "id": "e2", "source": "scrape-1", "target": "transform-1" }
+    ],
+    "createdAt": "2026-05-10T00:00:00.000Z",
+    "updatedAt": "2026-05-10T00:00:00.000Z"
+  }
+}

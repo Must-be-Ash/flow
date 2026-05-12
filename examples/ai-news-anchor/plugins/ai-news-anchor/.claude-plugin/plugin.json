@@ -1,0 +1,13 @@
+{
+  "name": "ai-news-anchor",
+  "version": "0.1.0",
+  "description": "Research any topic using credible news sources (BBC, CNN, Reuters, AP) and generate a polished 60-second audio news segment with a professional anchor voice. Outputs an MP3 file plus a script for reference. Payments: Perplexity search via MPP (Tempo chain) + ElevenLabs TTS via x402 ($0.013 USDC on Base).",
+  "author": {
+    "name": "Must-be-Ash",
+    "url": "https://github.com/Must-be-Ash"
+  },
+  "homepage": "https://github.com/Must-be-Ash/ai-news-anchor",
+  "repository": "https://github.com/Must-be-Ash/ai-news-anchor",
+  "license": "MIT",
+  "keywords": ["news", "audio", "anchor", "elevenlabs", "perplexity", "x402", "mpp", "tempo", "base", "usdc", "agent-payments"]
+}
