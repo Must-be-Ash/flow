@@ -1,0 +1,339 @@
+{
+  "id": "b8a43de6-0348-448a-b78d-dea3a7d8b5d3",
+  "slug": "tech-pulse",
+  "version": 1,
+  "name": "Tech Pulse",
+  "description": "Builder intelligence briefing: scans Twitter/X, Exa, HN, and GitHub for signals about YC startups, funding, emerging techniques, and ecosystem shifts. Outputs a ranked text briefing + 2-segment ElevenLabs audio narration. ~$0.06/run, no API keys required.",
+  "nodes": [
+    {
+      "id": "purpose-1",
+      "type": "purpose",
+      "position": { "x": 0, "y": 200 },
+      "data": {
+        "label": "Tech Pulse",
+        "type": "purpose",
+        "name": "Tech Pulse",
+        "description": "Twitter-first tech intelligence briefing. Surfaces signals about where the ecosystem is heading: YC-funded startups, funding patterns, technique discoveries, emerging paradigms, and what builders are collectively moving toward. Outputs a ranked text briefing + audio narration. No API keys — all sources paid via x402 USDC.",
+        "useCases": "Use when the user runs /tech-pulse, asks for a tech briefing, wants to know what's getting funded or built, or asks what's trending in AI/developer tools. Accepts an optional topic — defaults to broad AI/developer-tool signals.",
+        "notFor": "Not for general news (use /headlines), crypto prices (use /last30days-crypto), or individual tool reviews (use /tools-pulse). Not for topics requiring live TV or broadcast data.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-topic",
+      "type": "input",
+      "position": { "x": 340, "y": 200 },
+      "data": {
+        "label": "Topic (optional)",
+        "type": "input",
+        "description": "The tech topic to scan for signals. Leave blank for a broad AI/developer-tools briefing. Examples: 'knowledge graphs', 'YC', 'agent memory', 'LLM inference'.",
+        "placeholder": "AI developer tools startups funding trends 2026",
+        "saveAs": "topic",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-twitter-trends",
+      "type": "x402",
+      "position": { "x": 720, "y": -200 },
+      "data": {
+        "label": "X/Twitter: Tech Signals",
+        "description": "Search Twitter/X for high-engagement posts in the last 14 days about the topic. Focus on: ecosystem trends (builders moving from X to Y), technique discoveries, paradigm shifts, and what VCs or prominent builders are publicly excited about. For each result capture: handle, URL, summary, like count, and what it signals about where the ecosystem is heading.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://surf.cascade.fyi",
+          "path": "/api/v1/twitter/search",
+          "method": "POST",
+          "price": { "amount": "0.005", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Twitter search query" },
+              "limit": { "type": "number", "description": "Number of results", "default": 20 }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "search" }
+        }
+      }
+    },
+    {
+      "id": "x402-twitter-funding",
+      "type": "x402",
+      "position": { "x": 720, "y": -20 },
+      "data": {
+        "label": "X/Twitter: YC & Funding Signals",
+        "description": "Search Twitter/X for the last 14 days of posts about YC batch launches, seed and Series A funding announcements for developer-tool companies, and what top VCs are publicly excited about. Include posts from @garrytan, @paulg, @ycombinator, and founders announcing launches. For each: handle, URL, summary, likes.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://surf.cascade.fyi",
+          "path": "/api/v1/twitter/search",
+          "method": "POST",
+          "price": { "amount": "0.005", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Twitter search query" },
+              "limit": { "type": "number", "description": "Number of results", "default": 20 }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "search" }
+        }
+      }
+    },
+    {
+      "id": "x402-exa-startups",
+      "type": "x402",
+      "position": { "x": 720, "y": 160 },
+      "data": {
+        "label": "Exa: Startup & Funding News",
+        "description": "Neural search for articles published in the last 21 days about the topic — focusing on startup launches, seed/Series A funding rounds, and YC activity. Prefer results from TechCrunch, a16z blog, YC blog, and reputable tech publications. Return title, URL, publish date, and a 300-char excerpt.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Search query" },
+              "numResults": { "type": "number", "description": "Number of results", "default": 10 },
+              "startPublishedDate": { "type": "string", "description": "ISO date to filter results after (YYYY-MM-DD)" },
+              "useAutoprompt": { "type": "boolean", "default": true },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "description": "Content options", "default": { "text": { "maxCharacters": 400 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "x402-exa-research",
+      "type": "x402",
+      "position": { "x": 720, "y": 340 },
+      "data": {
+        "label": "Exa: Techniques & Research",
+        "description": "Neural search for blog posts, research papers, and technical articles from the last 21 days about the topic — focusing on emerging techniques, paradigm shifts, and research with practical builder implications. Summarize the key implication for builders, not the full paper. Return title, URL, publish date, and 300-char excerpt.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Search query" },
+              "numResults": { "type": "number", "description": "Number of results", "default": 8 },
+              "startPublishedDate": { "type": "string", "description": "ISO date to filter results after (YYYY-MM-DD)" },
+              "useAutoprompt": { "type": "boolean", "default": true },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "description": "Content options", "default": { "text": { "maxCharacters": 400 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "x402-github",
+      "type": "x402",
+      "position": { "x": 720, "y": 520 },
+      "data": {
+        "label": "GitHub: Trending Repos",
+        "description": "Search GitHub for newly created repositories (last 14 days) in the topic area that have gained significant stars quickly. High star velocity on new repos = strong trend signal. For each repo: full_name, star count, description, topics. What categories are these repos in?",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://surf.cascade.fyi",
+          "path": "/api/v1/github/search",
+          "method": "POST",
+          "price": { "amount": "0.002", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "GitHub search query" },
+              "type": { "type": "string", "description": "Type of search: repositories, code, issues", "default": "repositories" },
+              "sort": { "type": "string", "description": "Sort field", "default": "stars" },
+              "order": { "type": "string", "default": "desc" },
+              "limit": { "type": "number", "default": 10 }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "instruction-hn",
+      "type": "instruction",
+      "position": { "x": 720, "y": 700 },
+      "data": {
+        "label": "HN: Community Discussion (Free)",
+        "type": "instruction",
+        "instruction": "Call the free Hacker News Algolia API to find top stories and Ask HN posts about the topic. HN is free — no payment needed.\n\nStory search: GET https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=20&query={TOPIC_URL_ENCODED}\nAsk HN search: GET https://hn.algolia.com/api/v1/search?tags=ask_hn&hitsPerPage=10&query={TOPIC_URL_ENCODED}\n\nKeep only items with points ≥ 10. For each: points, num_comments, title, objectID (use as ID for seen-log).\nHN URL format: https://news.ycombinator.com/item?id={objectID}\n\nSort by points descending. Return top 15 stories + top 5 Ask HN posts.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-filter",
+      "type": "instruction",
+      "position": { "x": 1160, "y": 200 },
+      "data": {
+        "label": "Filter, Score & Deduplicate",
+        "type": "instruction",
+        "instruction": "Combine all research results (Twitter x2, Exa x2, GitHub, HN) and apply the quality filter and scoring system.\n\nKEEP if it is a genuine signal:\n- YC startup launch or seed/Series A funding announcement\n- Technique/method that could change how builders work\n- Trend with data: 'builders moving from X to Y'\n- Research paper with practical builder implication\n- What VCs or prominent builders are publicly excited about\n- Paradigm shift being debated on X / HN\n\nREJECT:\n- A specific tool to install (that is /tools-pulse)\n- Opinion without evidence or data point  \n- Corporate press release (blog post, conference recap)\n- Duplicate of another item in this run\n- Paywalled content with no usable summary\n\nSCORING — add points for each signal:\n- X likes ≥ 200 on a trend/startup post: +4\n- X likes 50–199: +2 | X likes 10–49: +1\n- HN ≥ 100 pts on trend discussion: +4\n- HN 30–99 pts: +2\n- Exa result from known publication (TechCrunch, a16z, YC blog): +2\n- GitHub repo >100 stars in 14 days in trend-relevant category: +3\n- Confirmed YC-backed or seed/Series A funded: +3\n- Multiple sources pointing to same trend: +3\n- Published in last 7 days: +1\n\nReturn top 5–8 items ranked by score. If fewer than 3 unique signals, flag that explicitly.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-briefing",
+      "type": "instruction",
+      "position": { "x": 1540, "y": 200 },
+      "data": {
+        "label": "Write Text Briefing",
+        "type": "instruction",
+        "instruction": "Format the filtered, scored signals into a clean text briefing. Group into sections only if 2+ items share a category; otherwise use a flat numbered list.\n\nSections: YC & Funding | Techniques | Ecosystem Shifts\n\nFormat per item:\n1. **{Title}**\n   {Sentence 1: what it is / what happened.} {Sentence 2: why this matters as a signal — what it reveals about where things are heading.}\n   Source: {source label with engagement metric if available}\n\nRULES:\n- Always say WHY something matters. Not just 'X startup launched' but 'X launched — this is the third YC company this month betting on [category], which tells you where the funding is clustering.'\n- 2 sentences max per item. No raw URLs in the briefing text.\n- End with a one-line source summary: 'X ({N} posts) | Exa ({N} articles) | HN ({N} stories, top signal: {top title} {N} pts) | GitHub ({N} repos) | {N} new signals'\n\nThis briefing is shown directly to the user. Make it sharp and opinionated.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-script",
+      "type": "instruction",
+      "position": { "x": 1920, "y": 200 },
+      "data": {
+        "label": "Write Audio Narration Script",
+        "type": "instruction",
+        "instruction": "Write a broadcast narration script split into exactly TWO segments. Each segment MUST be ≤140 words (hard limit — the TTS endpoint rejects more). Count every word.\n\nSEGMENT 1 — Intro + top signals (~140 words):\n- Open: 'Builder intelligence briefing, {weekday} {Month Day}. Here's what's moving in the ecosystem.'\n- Cover top 2–3 signals: one sentence each on WHAT and WHY it matters\n- End: 'More signals coming up.'\n\nSEGMENT 2 — Remaining signals + close (~140 words):\n- Cover remaining 2–3 signals\n- Close: 'That's your tech pulse for today. Tomorrow's signals load fresh.'\n\nSCRIPT RULES: active voice, present tense, no URLs, no @handles, no markdown. Spell out numbers ('three thousand likes' not '3,000'). Trim to 140 words if over — remove the least important clause first.\n\nOutput SEGMENT_1 and SEGMENT_2 as two clearly labeled text blocks.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-tts-1",
+      "type": "x402",
+      "position": { "x": 2300, "y": 80 },
+      "data": {
+        "label": "ElevenLabs TTS: Segment 1",
+        "description": "Convert SEGMENT_1 of the narration script to broadcast-quality MP3 audio via ElevenLabs. Send only SEGMENT_1 text (≤140 words) in the 'text' field. Returns base64-encoded audio in the 'audio' or 'audio_base64' field.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402helper.xyz",
+          "path": "/v1/tools/text-to-speech",
+          "method": "POST",
+          "price": { "amount": "0.013", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string", "description": "Text to convert to speech (max 140 words / ~160 chars safety limit)" }
+            },
+            "required": ["text"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "manual" }
+        }
+      }
+    },
+    {
+      "id": "x402-tts-2",
+      "type": "x402",
+      "position": { "x": 2300, "y": 340 },
+      "data": {
+        "label": "ElevenLabs TTS: Segment 2",
+        "description": "Convert SEGMENT_2 of the narration script to broadcast-quality MP3 audio via ElevenLabs. Send only SEGMENT_2 text (≤140 words) in the 'text' field. Returns base64-encoded audio in the 'audio' or 'audio_base64' field.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402helper.xyz",
+          "path": "/v1/tools/text-to-speech",
+          "method": "POST",
+          "price": { "amount": "0.013", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string", "description": "Text to convert to speech (max 140 words / ~160 chars safety limit)" }
+            },
+            "required": ["text"]
+          },
+          "source": { "discoveredAt": "2026-05-13T16:30:00.000Z", "via": "manual" }
+        }
+      }
+    },
+    {
+      "id": "instruction-save",
+      "type": "instruction",
+      "position": { "x": 2680, "y": 200 },
+      "data": {
+        "label": "Save Audio, Seen-Log & HTML Report",
+        "type": "instruction",
+        "instruction": "Finalize the briefing:\n\n1. AUDIO: Extract base64 audio from TTS responses. Decode both segments and concatenate into one file at ~/Downloads/tech-pulse-{YYYYMMDD}.mp3. Play with: afplay ~/Downloads/tech-pulse-{YYYYMMDD}.mp3\n   If TTS failed, fall back to: say -v Samantha -r 175 -o ~/Downloads/tech-pulse-{YYYYMMDD}.aiff '{combined script}'\n\n2. SEEN-LOG: Load ~/.local/share/tech-pulse/seen-log.json (or [] if missing). Remove entries older than 14 days. Add each surfaced signal as {id: URL, title, date_seen: today}. Write back.\n\n3. HTML REPORT: Write a self-contained HTML report to ~/Downloads/tech-pulse-{YYYYMMDD}.html with:\n   - Dark/light card layout, grouped by category (YC & Funding / Techniques / Ecosystem Shifts)\n   - Each card: tag chip, title, 2-sentence description, italic 'Signal:' line explaining what it means for where things are heading, clickable source buttons with actual URLs\n   - Footer: 'Generated by /tech-pulse · Seen-log: 14-day rolling window'\n   Then: open ~/Downloads/tech-pulse-{YYYYMMDD}.html\n\n4. CONFIRM to user: audio path + report path + cost summary (~$0.06 USDC).",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "output-briefing",
+      "type": "output",
+      "position": { "x": 3060, "y": 200 },
+      "data": {
+        "label": "Tech Pulse Briefing",
+        "type": "output",
+        "description": "Text briefing (displayed inline) + audio file at ~/Downloads/tech-pulse-{YYYYMMDD}.mp3 + HTML report at ~/Downloads/tech-pulse-{YYYYMMDD}.html. The briefing covers 5–8 signals ranked by strength. Seen-log updated for 14-day dedup.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e-purpose-input", "source": "purpose-1", "target": "input-topic", "type": "animated" },
+    { "id": "e-input-tw1", "source": "input-topic", "target": "x402-twitter-trends", "type": "animated" },
+    { "id": "e-input-tw2", "source": "input-topic", "target": "x402-twitter-funding", "type": "animated" },
+    { "id": "e-input-exa1", "source": "input-topic", "target": "x402-exa-startups", "type": "animated" },
+    { "id": "e-input-exa2", "source": "input-topic", "target": "x402-exa-research", "type": "animated" },
+    { "id": "e-input-gh", "source": "input-topic", "target": "x402-github", "type": "animated" },
+    { "id": "e-input-hn", "source": "input-topic", "target": "instruction-hn", "type": "animated" },
+    { "id": "e-tw1-filter", "source": "x402-twitter-trends", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-tw2-filter", "source": "x402-twitter-funding", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-exa1-filter", "source": "x402-exa-startups", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-exa2-filter", "source": "x402-exa-research", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-gh-filter", "source": "x402-github", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-hn-filter", "source": "instruction-hn", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-filter-briefing", "source": "instruction-filter", "target": "instruction-briefing", "type": "animated" },
+    { "id": "e-briefing-script", "source": "instruction-briefing", "target": "instruction-script", "type": "animated" },
+    { "id": "e-script-tts1", "source": "instruction-script", "target": "x402-tts-1", "type": "animated" },
+    { "id": "e-script-tts2", "source": "instruction-script", "target": "x402-tts-2", "type": "animated" },
+    { "id": "e-tts1-save", "source": "x402-tts-1", "target": "instruction-save", "type": "animated" },
+    { "id": "e-tts2-save", "source": "x402-tts-2", "target": "instruction-save", "type": "animated" },
+    { "id": "e-save-output", "source": "instruction-save", "target": "output-briefing", "type": "animated" }
+  ],
+  "createdAt": "2026-05-13T16:30:00.000Z",
+  "updatedAt": "2026-05-13T16:30:00.000Z"
+}

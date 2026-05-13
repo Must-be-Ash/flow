@@ -1,0 +1,183 @@
+{
+  "id": "2697d7cd-da33-4cb2-ace1-e909e01752aa",
+  "slug": "headlines",
+  "version": 1,
+  "name": "Headlines",
+  "description": "Global TV-style news briefing — 5–8 hard news headlines from whitelisted reputable outlets only (BBC, Reuters, FT, AP, NYT, Guardian, Bloomberg, Economist, CNN, WSJ, Al Jazeera). Free RSS feeds + optional Exa x402 supplement ($0.01). No API keys required.",
+  "nodes": [
+    {
+      "id": "purpose-1",
+      "type": "purpose",
+      "position": { "x": 0, "y": 150 },
+      "data": {
+        "label": "Headlines",
+        "type": "purpose",
+        "name": "Headlines",
+        "description": "TV-style news briefing pulled from verified, reputable outlets only. 5–8 headlines. Hard news only — no opinion, no fluff, no social media. Think BBC World Service morning bulletin. Reads the headlines aloud via macOS say after display.",
+        "useCases": "Use when the user runs /headlines, asks for today's news, wants a global briefing, or needs a quick news summary. Accepts optional topic or region: 'economy', 'tech', 'middle east', 'climate'.",
+        "notFor": "Not for Twitter/X trends (use /tech-pulse), crypto prices (use /last30days-crypto), opinion or analysis, or sources outside the whitelisted outlets. Never uses Reddit, HN, blogs, or aggregators.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-focus",
+      "type": "input",
+      "position": { "x": 340, "y": 150 },
+      "data": {
+        "label": "Focus (optional)",
+        "type": "input",
+        "description": "Optional topic or region to prioritize. Leave blank for a global sweep across all categories. Examples: 'economy', 'tech', 'middle east', 'climate', 'politics'. When set, prioritize matching headlines but still include 2–3 unrelated global headlines for balance.",
+        "placeholder": "global",
+        "saveAs": "focus",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-seen-log",
+      "type": "instruction",
+      "position": { "x": 680, "y": -60 },
+      "data": {
+        "label": "Load Seen-Log",
+        "type": "instruction",
+        "instruction": "Load the headlines seen-log to deduplicate against recent results:\n\n```bash\ncat ~/.local/share/headlines/seen-log.json 2>/dev/null || echo \"[]\"\n```\n\nParse the JSON array. Remove entries where date_seen is older than 3 days. Store the remaining normalized URL strings as ACTIVE_SEEN.\n\nHandle --clear flag: if the user passed '--clear', write [] to ~/.local/share/headlines/seen-log.json, confirm 'Seen-log cleared.' and stop.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-rss",
+      "type": "instruction",
+      "position": { "x": 680, "y": 160 },
+      "data": {
+        "label": "Fetch RSS Feeds (Free)",
+        "type": "instruction",
+        "instruction": "Fetch all four RSS feeds in parallel — free public XML, no API key needed:\n\n```bash\ncurl -s --max-time 10 -L \"https://feeds.bbci.co.uk/news/world/rss.xml\" -o /tmp/headlines_bbc.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://rss.nytimes.com/services/xml/rss/nyt/World.xml\" -o /tmp/headlines_nyt.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://feeds.theguardian.com/theguardian/world/rss\" -o /tmp/headlines_guardian.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://www.aljazeera.com/xml/rss/all.xml\" -o /tmp/headlines_aj.xml 2>/dev/null &\nwait\n```\n\nThen parse all feeds:\n```bash\npython3 -c \"\nimport xml.etree.ElementTree as ET, os\nfeeds = {\n    '/tmp/headlines_bbc.xml': 'BBC News',\n    '/tmp/headlines_nyt.xml': 'New York Times',\n    '/tmp/headlines_guardian.xml': 'The Guardian',\n    '/tmp/headlines_aj.xml': 'Al Jazeera',\n}\nfor path, outlet in feeds.items():\n    if not os.path.exists(path): continue\n    try:\n        tree = ET.parse(path)\n        root = tree.getroot()\n        for item in root.findall('.//item')[:10]:\n            title = (item.findtext('title') or '').strip()\n            pub = (item.findtext('pubDate') or '')[:22]\n            link = (item.findtext('link') or '').strip()\n            if title:\n                print(f'{outlet}|{pub}|{title}|{link}')\n    except: pass\n\"\n```\n\nReturn each result as: outlet | pubDate | title | URL",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-exa",
+      "type": "x402",
+      "position": { "x": 680, "y": 400 },
+      "data": {
+        "label": "Exa: Breaking News from Whitelisted Outlets",
+        "description": "Supplement the RSS feeds with Exa neural search restricted to whitelisted outlets only. Search for breaking news matching the focus topic published in the last 48 hours. Use includeDomains to enforce the outlet whitelist. Returns title, URL, publish date, and a brief excerpt.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query — e.g. 'breaking world news today 2026' or 'breaking {focus} news today 2026'"
+              },
+              "numResults": { "type": "number", "default": 10 },
+              "startPublishedDate": {
+                "type": "string",
+                "description": "ISO date 2 days ago (YYYY-MM-DD) to restrict to recent results"
+              },
+              "includeDomains": {
+                "type": "array",
+                "description": "Whitelist of permitted domains",
+                "default": ["bbc.com", "reuters.com", "apnews.com", "ft.com", "economist.com", "nytimes.com", "theguardian.com", "bloomberg.com", "wsj.com", "aljazeera.com", "politico.com", "cnn.com"]
+              },
+              "useAutoprompt": { "type": "boolean", "default": false },
+              "type": { "type": "string", "default": "neural" },
+              "contents": {
+                "type": "object",
+                "default": { "text": { "maxCharacters": 300 } }
+              }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:00:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "instruction-filter",
+      "type": "instruction",
+      "position": { "x": 1120, "y": 200 },
+      "data": {
+        "label": "Quality Filter, Dedup & Rank",
+        "type": "instruction",
+        "instruction": "Combine RSS results and Exa results. Apply strict quality filters — an item PASSES only if ALL are true:\n\n1. SOURCE ON WHITELIST: BBC News, Reuters, AP, Financial Times, The Economist, New York Times, CNN, The Guardian, Wall Street Journal, Bloomberg, Politico, Al Jazeera (English). Reject anything else — no exceptions.\n\n2. HARD NEWS ONLY: Reject opinion columns, editorials, analysis essays, listicles ('5 things to know about...'), sponsored content, lifestyle, entertainment. Keep: breaking news, event reports, official announcements, policy decisions, conflict updates, economic data releases.\n\n3. NOT IN SEEN-LOG: Generate dedup-ID = lowercase URL with query params stripped. Reject if found in ACTIVE_SEEN.\n\n4. RECENT: Prefer articles from last 48 hours. Reject anything older than 7 days.\n\nRANKING of passing items:\n- Score = recency × outlet authority (Reuters/AP/BBC = 1.0, others = 0.8)\n- Aim for geographic diversity: at least 3 different regions if possible\n- If focus was set, push matching headlines to the top\n- Select 5–8 headlines total\n\nIf fewer than 3 items pass: output 'Not enough new headlines found. Sources may not have published yet or all recent headlines were already reported. Try again in a few hours.' and stop — still update the seen-log.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-output",
+      "type": "instruction",
+      "position": { "x": 1500, "y": 200 },
+      "data": {
+        "label": "Format & Display Briefing",
+        "type": "instruction",
+        "instruction": "Format and display the headlines briefing. No preamble — start directly with the header.\n\nFormat:\n```\n📡 /headlines — {date}, {time if available}\n\n1. [{TAG}] {Headline: declarative sentence, TV-anchor voice, present tense}\n   {One sentence of essential context: who, what, where, significance.}\n   — {Outlet Name}\n\n[repeat for 5–8 items]\n\n---\n{N} headlines | Sources: {outlet names used} | Seen-log: {N} items tracked\nRun /headlines again for a fresh briefing.\n```\n\nTag options: [GLOBAL] [ECONOMY] [POLITICS] [CONFLICT] [TECH] [CLIMATE] [SOCIETY] [HEALTH] [DIPLOMACY]\n\nVOICE RULES:\n- Declarative present tense: 'Ceasefire talks collapse as both sides reject proposals' NOT 'have collapsed'\n- No raw URLs. No hyperlinks. Outlet name only (e.g. '— BBC News', '— Reuters')\n- Max 2 sentences per item: 1 headline + 1 context sentence. Never more.\n- Order: most significant / most urgent first, not chronological\n- No hedging ('it appears', 'some are saying'), no redundancy",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-audio",
+      "type": "instruction",
+      "position": { "x": 1880, "y": 200 },
+      "data": {
+        "label": "Write & Speak Audio Script",
+        "type": "instruction",
+        "instruction": "Write a clean spoken narration script for the headlines, then speak it via macOS say (free, no API cost, no word limit).\n\nSCRIPT STRUCTURE:\n- Open: 'Here are today's headlines.'\n- For each headline: one confident declarative sentence, then one brief context sentence, end with outlet credit: '...according to BBC News.' / '...Reuters reports.'\n- Close: 'That's your headlines briefing.'\n\nSCRIPT RULES: Present tense, active voice. Spell out numbers ('three billion' not '3B'). No URLs, no handles, no brackets, no markdown dashes. Write exactly how you'd say it.\n\nThen write the script to a temp file and speak it:\n```bash\nDATE=$(date +%Y%m%d)\nSCRIPT_FILE=\"/tmp/headlines-script-${DATE}.txt\"\nOUTFILE=\"/Users/ashnouruzi/Downloads/headlines-${DATE}.aiff\"\n# [Write narration text to $SCRIPT_FILE using the Write tool]\nsay -v Samantha -r 175 -o \"${OUTFILE}\" -f \"${SCRIPT_FILE}\"\nafplay \"${OUTFILE}\"\n```\n\nAfter playback confirm: '🔊 Audio saved: ~/Downloads/headlines-{YYYYMMDD}.aiff'",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-seen-log-write",
+      "type": "instruction",
+      "position": { "x": 2260, "y": 200 },
+      "data": {
+        "label": "Update Seen-Log",
+        "type": "instruction",
+        "instruction": "Silently update the seen-log after display and audio playback:\n\n1. Read ~/.local/share/headlines/seen-log.json (or [])\n2. Remove entries where date_seen is older than 3 days\n3. Append each headline shown:\n   {\"id\": \"<normalized-url>\", \"title\": \"...\", \"url\": \"...\", \"date_seen\": \"YYYY-MM-DD\"}\n   Normalized URL = lowercase, query params stripped\n4. Write updated array back to ~/.local/share/headlines/seen-log.json\n   (mkdir -p ~/.local/share/headlines/ if needed)\n\nDo this silently — no message to the user.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "output-briefing",
+      "type": "output",
+      "position": { "x": 2620, "y": 200 },
+      "data": {
+        "label": "Headlines Briefing",
+        "type": "output",
+        "description": "5–8 hard news headlines from whitelisted outlets, formatted TV-anchor style. Audio saved to ~/Downloads/headlines-{YYYYMMDD}.aiff and played. Seen-log updated with 3-day rolling dedup window.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e-purpose-input", "source": "purpose-1", "target": "input-focus", "type": "animated" },
+    { "id": "e-input-seenlog", "source": "input-focus", "target": "instruction-seen-log", "type": "animated" },
+    { "id": "e-input-rss", "source": "input-focus", "target": "instruction-rss", "type": "animated" },
+    { "id": "e-input-exa", "source": "input-focus", "target": "x402-exa", "type": "animated" },
+    { "id": "e-seenlog-filter", "source": "instruction-seen-log", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-rss-filter", "source": "instruction-rss", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-exa-filter", "source": "x402-exa", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-filter-output", "source": "instruction-filter", "target": "instruction-output", "type": "animated" },
+    { "id": "e-output-audio", "source": "instruction-output", "target": "instruction-audio", "type": "animated" },
+    { "id": "e-audio-save", "source": "instruction-audio", "target": "instruction-seen-log-write", "type": "animated" },
+    { "id": "e-save-done", "source": "instruction-seen-log-write", "target": "output-briefing", "type": "animated" }
+  ],
+  "createdAt": "2026-05-13T17:00:00.000Z",
+  "updatedAt": "2026-05-13T17:00:00.000Z"
+}

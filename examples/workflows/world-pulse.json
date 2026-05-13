@@ -1,0 +1,357 @@
+{
+  "id": "f1aaf7a2-fcc1-4111-ac4a-8cf3b601c798",
+  "slug": "world-pulse",
+  "version": 1,
+  "name": "World Pulse",
+  "description": "Science, space, health breakthroughs + high-impact economy + major disasters — from Reuters, BBC, FT, NYT, AP. No politics, no conflict, no diplomacy. TV Anchorman-style audio via ElevenLabs TTS (with macOS say fallback). ~$0.06/run, no API keys.",
+  "nodes": [
+    {
+      "id": "purpose-1",
+      "type": "purpose",
+      "position": { "x": 0, "y": 300 },
+      "data": {
+        "label": "World Pulse",
+        "type": "purpose",
+        "name": "World Pulse",
+        "description": "Three categories only — in strict priority order: (1) Science/Space/Health breakthroughs, (2) high-impact Economy/Business, (3) major Disasters/unmissable events. Hard excludes: conflict, politics, diplomacy, climate policy, society, justice. Sources: Exa neural search (3 targeted sweeps) + BBC/NYT/Guardian/FT RSS feeds. Reads aloud via ElevenLabs TTS with macOS say fallback.",
+        "useCases": "Use when the user runs /world-pulse or wants science breakthroughs, major economic news, or significant world events without political noise. Optional focus: 'science', 'health', 'space', 'economy'.",
+        "notFor": "Not for political news, conflict updates, election coverage, diplomacy, court cases, social issues, or climate policy debate. Not for Twitter trends or crypto prices. If the primary angle is war, elections, or geopolitics — it does not belong here.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-focus",
+      "type": "input",
+      "position": { "x": 340, "y": 300 },
+      "data": {
+        "label": "Focus (optional)",
+        "type": "input",
+        "description": "Optional sub-topic to prioritize within the three allowed categories. Examples: 'science', 'space', 'health', 'economy'. Leave blank for a broad sweep across all three categories.",
+        "placeholder": "science space health economy",
+        "saveAs": "focus",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-setup",
+      "type": "instruction",
+      "position": { "x": 720, "y": -60 },
+      "data": {
+        "label": "Setup & Load Seen-Log",
+        "type": "instruction",
+        "instruction": "Handle --clear flag: if user passed '--clear', write [] to ~/.local/share/world-pulse/seen-log.json, confirm 'Seen-log cleared.' and stop.\n\nOtherwise load the seen-log:\n```bash\nmkdir -p ~/.config/world-pulse ~/.local/share/world-pulse\ncat ~/.local/share/world-pulse/seen-log.json 2>/dev/null || echo \"[]\"\n```\n\nRemove entries where date_seen is older than 24 hours. Store active story-slugs as ACTIVE_SEEN.\n\nIMPORTANT: The dedup key for world-pulse is a STORY SLUG (not a URL). A story slug is a 3–5 word lowercase hyphenated summary of the underlying event (e.g., 'cancer-drug-trial-success', 'fed-rate-cut-decision', 'turkey-earthquake-casualties'). Multiple outlets covering the same event share one slug.\n\nDisplay: '🌍 /world-pulse — pulling last 24hrs from Reuters, BBC, FT, NYT, Exa.'",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-exa-science",
+      "type": "x402",
+      "position": { "x": 720, "y": 120 },
+      "data": {
+        "label": "Exa: Science / Space / Health",
+        "description": "PRIMARY sweep — highest priority category. Search for science discoveries, space missions, medical breakthroughs, and health research published in the last 24 hours from whitelisted outlets. Request 12 results. Include snippet text for clustering. This sweep should always have results if there's any qualifying news.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "e.g. 'science discovery breakthrough research space healthcare medicine today'" },
+              "numResults": { "type": "number", "default": 12 },
+              "startPublishedDate": { "type": "string", "description": "Yesterday's date ISO format (YYYY-MM-DD)" },
+              "includeDomains": {
+                "type": "array",
+                "default": ["reuters.com", "bbc.com", "nytimes.com", "ft.com", "theguardian.com", "cnn.com", "apnews.com", "pbs.org", "bloomberg.com", "economist.com", "aljazeera.com"]
+              },
+              "useAutoprompt": { "type": "boolean", "default": false },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "default": { "text": { "maxCharacters": 500 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "x402-exa-economy",
+      "type": "x402",
+      "position": { "x": 720, "y": 320 },
+      "data": {
+        "label": "Exa: Economy / Business (High Bar)",
+        "description": "SECONDARY sweep — high-impact economy news only. Search for central bank decisions, market crashes, major corporate failures, GDP data, and systemic financial events from the last 24 hours. Request 8 results. The bar is high: a non-investor must need to know this. Skip earnings reports, minor stock moves, executive appointments.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "e.g. 'major economic announcement central bank market crash company collapse recession financial crisis today'" },
+              "numResults": { "type": "number", "default": 8 },
+              "startPublishedDate": { "type": "string", "description": "Yesterday's date ISO format (YYYY-MM-DD)" },
+              "includeDomains": {
+                "type": "array",
+                "default": ["reuters.com", "ft.com", "bloomberg.com", "nytimes.com", "economist.com", "bbc.com", "apnews.com", "cnn.com"]
+              },
+              "useAutoprompt": { "type": "boolean", "default": false },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "default": { "text": { "maxCharacters": 400 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "x402-exa-disasters",
+      "type": "x402",
+      "position": { "x": 720, "y": 520 },
+      "data": {
+        "label": "Exa: Disasters / Unmissable Events",
+        "description": "TERTIARY sweep — only what you'd be embarrassed not to know. Search for earthquakes, major accidents, plane crashes, industrial explosions, and events dominating every outlet from the last 24 hours. Request 6 results. Skip smaller regional incidents covered by only 1–2 outlets.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "e.g. 'earthquake disaster explosion major accident humanitarian crisis deaths casualties today'" },
+              "numResults": { "type": "number", "default": 6 },
+              "startPublishedDate": { "type": "string", "description": "Yesterday's date ISO format (YYYY-MM-DD)" },
+              "includeDomains": {
+                "type": "array",
+                "default": ["reuters.com", "bbc.com", "apnews.com", "cnn.com", "nytimes.com", "theguardian.com"]
+              },
+              "useAutoprompt": { "type": "boolean", "default": false },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "default": { "text": { "maxCharacters": 300 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "x402-exa-focus",
+      "type": "x402",
+      "position": { "x": 720, "y": 720 },
+      "data": {
+        "label": "Exa: Focus Topic Sweep (conditional)",
+        "description": "Optional sweep — only run if the user provided a specific focus topic (not the default broad sweep). Targeted search for breakthroughs or discoveries matching the focus within the last 24 hours. Request 6 results. Skip if no specific focus was set.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/exa/search",
+          "method": "POST",
+          "price": { "amount": "0.01", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "e.g. '{focus} breakthrough discovery update today'" },
+              "numResults": { "type": "number", "default": 6 },
+              "startPublishedDate": { "type": "string", "description": "Yesterday's date ISO format (YYYY-MM-DD)" },
+              "includeDomains": {
+                "type": "array",
+                "default": ["reuters.com", "bbc.com", "nytimes.com", "ft.com", "economist.com", "bloomberg.com", "apnews.com"]
+              },
+              "useAutoprompt": { "type": "boolean", "default": false },
+              "type": { "type": "string", "default": "neural" },
+              "contents": { "type": "object", "default": { "text": { "maxCharacters": 300 } } }
+            },
+            "required": ["query"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "discover" }
+        }
+      }
+    },
+    {
+      "id": "instruction-rss",
+      "type": "instruction",
+      "position": { "x": 720, "y": 940 },
+      "data": {
+        "label": "Fetch RSS Feeds (Free, 24hr filter)",
+        "type": "instruction",
+        "instruction": "Fetch BBC, NYT, Guardian, and FT RSS feeds in parallel — free public XML, no API key:\n\n```bash\ncurl -s --max-time 10 -L \"https://feeds.bbci.co.uk/news/world/rss.xml\" -o /tmp/wp_bbc.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://rss.nytimes.com/services/xml/rss/nyt/World.xml\" -o /tmp/wp_nyt.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://feeds.theguardian.com/theguardian/world/rss\" -o /tmp/wp_guardian.xml 2>/dev/null &\ncurl -s --max-time 10 -L \"https://www.ft.com/news-feed?format=rss\" -o /tmp/wp_ft.xml 2>/dev/null &\nwait\n```\n\nParse — keep only items from the last 24 hours:\n```bash\npython3 -c \"\nimport xml.etree.ElementTree as ET, os\nfrom datetime import datetime, timedelta, timezone\nfrom email.utils import parsedate_to_datetime\ncutoff = datetime.now(timezone.utc) - timedelta(hours=24)\nfeeds = {'/tmp/wp_bbc.xml':'BBC News','/tmp/wp_nyt.xml':'New York Times','/tmp/wp_guardian.xml':'The Guardian','/tmp/wp_ft.xml':'Financial Times'}\nfor path, outlet in feeds.items():\n    if not os.path.exists(path): continue\n    try:\n        tree = ET.parse(path)\n        for item in tree.getroot().findall('.//item')[:15]:\n            title = (item.findtext('title') or '').strip()\n            pub_str = item.findtext('pubDate') or ''\n            link = (item.findtext('link') or '').strip()\n            if not title: continue\n            try:\n                pub_dt = parsedate_to_datetime(pub_str)\n                if pub_dt < cutoff: continue\n                pub = pub_dt.strftime('%Y-%m-%dT%H:%M')\n            except:\n                pub = pub_str[:16]\n            print(f'RSS|{outlet}|{pub}|{title}|{link}')\n    except: pass\n\"\n```\n\nReturn: outlet | pubDate | title | URL for each recent item.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-cluster",
+      "type": "instruction",
+      "position": { "x": 1220, "y": 400 },
+      "data": {
+        "label": "Story Clustering (Critical Dedup)",
+        "type": "instruction",
+        "instruction": "Combine ALL results from the 3–4 Exa sweeps and RSS feeds. Before selecting anything, cluster all articles by the underlying real-world event.\n\nCLUSTERING RULES:\n1. Read all article titles and snippets\n2. Group into story clusters — a cluster = all articles covering the same real-world event\n   Examples: 'Trump says ceasefire failing' + 'Hezbollah drone update' → ONE cluster: 'iran-ceasefire-tensions'\n3. Each cluster gets:\n   - story-slug: 3–5 words, lowercase, hyphenated (e.g. 'cancer-drug-trial-success')\n   - canonical outlet: pick most authoritative (Reuters > AP > BBC > FT > NYT > others)\n   - canonical title: from most authoritative source or clearest phrasing\n   - brief summary: 1–2 sentences synthesised from all cluster sources\n4. Discard clusters that are only opinion, analysis, or editorial (no hard news event)\n5. Check each story-slug against ACTIVE_SEEN — if already seen in last 24hrs, skip the entire cluster\n\nOutput a deduplicated list of unique story clusters ready for quality filtering.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-filter",
+      "type": "instruction",
+      "position": { "x": 1680, "y": 400 },
+      "data": {
+        "label": "Quality Filter & Rank",
+        "type": "instruction",
+        "instruction": "Apply strict category filter to each story cluster. A story passes only if it clearly belongs to one of these three:\n\n1. SCIENCE / SPACE / HEALTH (highest priority — fill this first, up to 5 stories)\n   - Scientific discoveries, research in major journals, experimental results\n   - Space: missions, launches, discoveries, telescope findings\n   - Medical: drug approvals, treatment breakthroughs, disease research, public health data\n   - Test: 'Does this expand what I understand about the world or human health?' If yes → keep\n\n2. ECONOMY / BUSINESS (max 2 stories — high bar)\n   - Central bank decisions, recession signals, GDP data, major corporate failures, market crashes >5%\n   - Test: 'Would a non-investor need to know this?' If no → skip\n   - SKIP: earnings reports, stock moves <5%, executive appointments, mergers without clear public impact\n\n3. DISASTERS / UNMISSABLE EVENTS (max 2 stories — high bar)\n   - Earthquakes, tsunamis, major accidents, plane crashes, events dominating every outlet\n   - Test: 'If someone mentioned this and I hadn't heard, would I look out of touch?' If yes → keep\n   - SKIP: smaller regional disasters, low-casualty events covered by only 1–2 outlets\n\nHARD EXCLUDES — reject immediately, no exceptions:\nCONFLICT | POLITICS | DIPLOMACY | CLIMATE POLICY | SOCIETY | JUSTICE | OPINION\n\nSCORING:\n- SCIENCE/SPACE/HEALTH: +4 base | peer-reviewed journal: +2 | genuine breakthrough: +3 | incremental update: +1\n- ECONOMY: central bank/systemic: +3 | market data: +1\n- DISASTER: major casualties/global significance: +2\n- Published <12 hours: +1 | Reuters/AP/BBC source: +1\n\nSELECTION ORDER: Science first (up to 5) → Economy (max 2) → Disaster (max 2). Target 4–7 total.\n\nIf <3 pass: output 'Not enough qualifying stories in the last 24 hours. Try again later.' Do not pad with political or conflict news.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-output",
+      "type": "instruction",
+      "position": { "x": 2140, "y": 400 },
+      "data": {
+        "label": "Format & Display Briefing",
+        "type": "instruction",
+        "instruction": "Format and display the briefing. No preamble — start with the header:\n\n```\n🌍 /world-pulse — {Weekday, Month Day, YYYY}\n\n1. [{TAG}] {Headline: declarative, present tense, TV-anchor voice}\n   {One sentence: essential context — who, what, where, why it matters.}\n   — {Outlet Name}\n\n[repeat for 4–7 items]\n\n---\n{N} unique stories | Sources: {outlet names} | {N} articles clustered into {N} stories | {N} skipped (seen)\n```\n\nTags — exactly these five, nothing else:\n[SCIENCE] [SPACE] [HEALTH] [ECONOMY] [DISASTER]\n\nVOICE RULES:\n- Declarative present tense: 'Cancer drug shows ninety percent success rate' NOT 'has shown'\n- Never repeat the same underlying event — one cluster, one headline\n- No raw URLs, no handles, outlet name only (e.g. '— Reuters', '— BBC News')\n- Max 2 sentences per story\n- Order: most significant first (Science/Space/Health breakthroughs at the top)",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-script",
+      "type": "instruction",
+      "position": { "x": 2600, "y": 400 },
+      "data": {
+        "label": "Write TV Anchorman Script",
+        "type": "instruction",
+        "instruction": "Write a CNN prime-time TV Anchorman narration script in TWO segments. Each segment MUST be ≤140 words (hard limit). Count words and trim if over.\n\nSEGMENT 1 — Cold open + top 3–4 stories:\n- Open cold: 'Tonight on World Pulse — [punchy one-liner on biggest story]. Also: [tease 2], [tease 3]. Here's what you need to know.'\n- Story 1: 2–3 sentences with weight. Stories 2–3: 1–2 sentences each.\n- End: 'Don't go anywhere.' or 'Still ahead...'\n\nSEGMENT 2 — Remaining stories + close:\n- Open: 'And we're back.'\n- Stories 4–6: 1–2 sentences each.\n- Close: 'That's your World Pulse. Stay curious — we'll see you next time.'\n\nSCRIPT RULES: Active voice, present tense, no markdown, no URLs, no handles. Spell out numbers ('three point eight percent'). Name outlets ('Reuters reports...' not 'reuters.com'). Enthusiastic about science. Grave about disasters. Count words — trim to ≤140 if over.\n\nOutput SEGMENT_1 and SEGMENT_2 as two clearly labeled text blocks.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-tts-1",
+      "type": "x402",
+      "position": { "x": 3060, "y": 260 },
+      "data": {
+        "label": "ElevenLabs TTS: Segment 1",
+        "description": "Convert SEGMENT_1 to broadcast-quality MP3 via ElevenLabs. Send only SEGMENT_1 text (≤140 words). Returns base64-encoded audio in 'audio' or 'audio_base64' field. If this fails with a payment/network error, fall back to macOS say for both segments.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402helper.xyz",
+          "path": "/v1/tools/text-to-speech",
+          "method": "POST",
+          "price": { "amount": "0.013", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string", "description": "SEGMENT_1 narration text (≤140 words)" }
+            },
+            "required": ["text"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "manual" }
+        }
+      }
+    },
+    {
+      "id": "x402-tts-2",
+      "type": "x402",
+      "position": { "x": 3060, "y": 540 },
+      "data": {
+        "label": "ElevenLabs TTS: Segment 2",
+        "description": "Convert SEGMENT_2 to broadcast-quality MP3 via ElevenLabs. Send only SEGMENT_2 text (≤140 words). Returns base64-encoded audio in 'audio' or 'audio_base64' field. If this fails, fall back to macOS say.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://x402helper.xyz",
+          "path": "/v1/tools/text-to-speech",
+          "method": "POST",
+          "price": { "amount": "0.013", "asset": "USDC", "chain": "base" },
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string", "description": "SEGMENT_2 narration text (≤140 words)" }
+            },
+            "required": ["text"]
+          },
+          "source": { "discoveredAt": "2026-05-13T17:30:00.000Z", "via": "manual" }
+        }
+      }
+    },
+    {
+      "id": "instruction-save",
+      "type": "instruction",
+      "position": { "x": 3500, "y": 400 },
+      "data": {
+        "label": "Save Audio & Update Seen-Log",
+        "type": "instruction",
+        "instruction": "AUDIO:\nIf both TTS segments returned audio (base64 in 'audio' or 'audio_base64' field):\n```python\nimport base64\naudio1 = base64.b64decode(result1.get('audio') or result1.get('audio_base64'))\naudio2 = base64.b64decode(result2.get('audio') or result2.get('audio_base64'))\npath = '/Users/ashnouruzi/Downloads/world-pulse-{YYYYMMDD}.mp3'\nopen(path, 'wb').write(audio1 + audio2)\n```\n```bash\nafplay \"/Users/ashnouruzi/Downloads/world-pulse-$(date +%Y%m%d).mp3\"\n```\nConfirm: '🎙 Audio saved: ~/Downloads/world-pulse-{YYYYMMDD}.mp3 (~$0.026 USDC)'\n\nFALLBACK (if TTS failed):\n```bash\nDATE=$(date +%Y%m%d)\nSCRIPT_FILE=\"/tmp/world-pulse-script-${DATE}.txt\"\nOUTFILE=\"/Users/ashnouruzi/Downloads/world-pulse-${DATE}.aiff\"\n# Write SEGMENT_1 + ' ' + SEGMENT_2 to $SCRIPT_FILE using Write tool, then:\nsay -v Samantha -r 175 -o \"${OUTFILE}\" -f \"${SCRIPT_FILE}\"\nafplay \"${OUTFILE}\"\n```\nConfirm: '🔊 Audio (fallback): ~/Downloads/world-pulse-{YYYYMMDD}.aiff'\n\nSEEN-LOG:\n```python\nimport json\nfrom datetime import datetime, timedelta, timezone\npath = '/Users/ashnouruzi/.local/share/world-pulse/seen-log.json'\ncutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()[:10]\ntry: existing = json.load(open(path))\nexcept: existing = []\nactive = [e for e in existing if e.get('date_seen','') >= cutoff]\nnew_items = [{'id': cluster['slug'], 'title': cluster['title'], 'url': cluster['url'], 'date_seen': today_iso} for cluster in surfaced_clusters]\nseen_ids = {e['id'] for e in active}\nto_add = [n for n in new_items if n['id'] not in seen_ids]\nactive.extend(to_add)\njson.dump(active, open(path,'w'), indent=2)\n```\nDo this silently — no message to the user.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "output-briefing",
+      "type": "output",
+      "position": { "x": 3900, "y": 400 },
+      "data": {
+        "label": "World Pulse Briefing",
+        "type": "output",
+        "description": "4–7 stories across Science/Space/Health (priority), Economy (max 2), and Disasters (max 2). Audio saved to ~/Downloads/world-pulse-{YYYYMMDD}.mp3 (ElevenLabs) or .aiff (say fallback). Seen-log updated with 24-hour rolling dedup window keyed by story slug.",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e-purpose-input", "source": "purpose-1", "target": "input-focus", "type": "animated" },
+    { "id": "e-input-setup", "source": "input-focus", "target": "instruction-setup", "type": "animated" },
+    { "id": "e-input-sci", "source": "input-focus", "target": "x402-exa-science", "type": "animated" },
+    { "id": "e-input-econ", "source": "input-focus", "target": "x402-exa-economy", "type": "animated" },
+    { "id": "e-input-dis", "source": "input-focus", "target": "x402-exa-disasters", "type": "animated" },
+    { "id": "e-input-foc", "source": "input-focus", "target": "x402-exa-focus", "type": "animated" },
+    { "id": "e-input-rss", "source": "input-focus", "target": "instruction-rss", "type": "animated" },
+    { "id": "e-setup-cluster", "source": "instruction-setup", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-sci-cluster", "source": "x402-exa-science", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-econ-cluster", "source": "x402-exa-economy", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-dis-cluster", "source": "x402-exa-disasters", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-foc-cluster", "source": "x402-exa-focus", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-rss-cluster", "source": "instruction-rss", "target": "instruction-cluster", "type": "animated" },
+    { "id": "e-cluster-filter", "source": "instruction-cluster", "target": "instruction-filter", "type": "animated" },
+    { "id": "e-filter-output", "source": "instruction-filter", "target": "instruction-output", "type": "animated" },
+    { "id": "e-output-script", "source": "instruction-output", "target": "instruction-script", "type": "animated" },
+    { "id": "e-script-tts1", "source": "instruction-script", "target": "x402-tts-1", "type": "animated" },
+    { "id": "e-script-tts2", "source": "instruction-script", "target": "x402-tts-2", "type": "animated" },
+    { "id": "e-tts1-save", "source": "x402-tts-1", "target": "instruction-save", "type": "animated" },
+    { "id": "e-tts2-save", "source": "x402-tts-2", "target": "instruction-save", "type": "animated" },
+    { "id": "e-save-out", "source": "instruction-save", "target": "output-briefing", "type": "animated" }
+  ],
+  "createdAt": "2026-05-13T17:30:00.000Z",
+  "updatedAt": "2026-05-13T17:30:00.000Z"
+}
