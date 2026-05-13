@@ -52,3 +52,5 @@ personal-docs/
 
 # editor / agent state
 .claude/
+.cursor/
+.vscode/
