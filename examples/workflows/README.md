@@ -9,6 +9,7 @@ Drop-in workflow templates you can open in Flow.
 | `news-clip-maker.json` | Searches the latest news on a topic, writes a short script, and generates a 6-second video clip. |
 | `mail-skill.json` | Sends physical mail (letters and postcards) in the US via PostalForm. Supports user PDFs, auto-generated letters from text, and AI-generated postcard artwork. |
 | `recruit-skill.json` | Sources candidate shortlists for a recruiter via parallel Apollo + Exa calls, enriches the top 20 with verified emails (Apollo /people/match + Tomba fallback), and writes a ranked markdown report. |
+| `recruit-email.json` | Finds candidates for any role via Apollo + Hunter, shows a ranked shortlist with draft emails for approval, then sends personalized outreach via StableEmail. Logs sent history to prevent duplicate outreach. ~$1.70 USDC per run. |
 | `tech-pulse.json` | Builder intelligence briefing — scans Twitter/X, Exa, HN, and GitHub for YC launches, funding signals, technique discoveries, and ecosystem shifts. Outputs a ranked text briefing + ElevenLabs audio narration. ~$0.06/run, no API keys. |
 | `world-pulse.json` | Science, space, health breakthroughs + high-impact economy + major disasters — no politics, no conflict. Three Exa sweeps + free RSS feeds + ElevenLabs TTS narration. ~$0.07/run, no API keys. |
 
@@ -24,6 +25,7 @@ cp examples/workflows/headlines.json .flow/workflows/
 cp examples/workflows/news-clip-maker.json .flow/workflows/
 cp examples/workflows/mail-skill.json .flow/workflows/
 cp examples/workflows/recruit-skill.json .flow/workflows/
+cp examples/workflows/recruit-email.json .flow/workflows/
 cp examples/workflows/tech-pulse.json .flow/workflows/
 cp examples/workflows/world-pulse.json .flow/workflows/
 ```

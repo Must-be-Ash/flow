@@ -1,0 +1,212 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "slug": "recruit-email",
+  "name": "Recruiter + Email Outreach",
+  "description": "Find candidates for any role via Apollo and Hunter, show a ranked shortlist with draft emails for approval, then send personalized outreach via StableEmail. Logs sent history to prevent duplicate outreach. ~$1.70 USDC per run.",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "purpose-recruit-email",
+      "type": "purpose",
+      "position": { "x": 340, "y": -320 },
+      "data": {
+        "label": "Recruiter + Email Outreach",
+        "type": "purpose",
+        "name": "Recruiter + Email Outreach",
+        "description": "Find candidates for any job role using Apollo + LinkedIn data, show you a ranked shortlist with draft outreach emails for your approval, then send personalized cold emails via StableEmail. Saves a sent log to data/sent_log.md to prevent duplicate outreach across runs. Payments in USDC via agentcash (x402/MPP on Base).",
+        "useCases": "Find and email PM candidates; source engineers and send cold outreach; recruit and contact sales reps; build a shortlist and reach out — any role, any seniority.",
+        "notFor": "Not for passive research only (use recruit-skill instead). Not for mass cold email campaigns. Not for non-recruiting outreach.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "input-role",
+      "type": "input",
+      "position": { "x": 340, "y": -120 },
+      "data": {
+        "label": "Role Requirements",
+        "type": "input",
+        "description": "Job title (e.g. 'Product Manager', 'Senior Engineer'), required skills, location (optional — leave blank for global/remote), min years of experience (default 3+), company stage (startup / enterprise / any), your name, your company, and the reply-to email address for candidate responses.",
+        "placeholder": "Product Manager, B2B SaaS, San Francisco, 5+ years, startup stage. I'm Alex at Acme Corp. Reply-to: alex@acmecorp.com",
+        "saveAs": "role_brief",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-apollo-search",
+      "type": "x402",
+      "position": { "x": 340, "y": 90 },
+      "data": {
+        "label": "Apollo People Search",
+        "description": "Search for ~20 candidates matching the role brief. Use q_keywords for role + skills (do NOT combine with person_titles — returns 0 results). Returns obfuscated names — must enrich each result immediately using the returned id. $0.02 per call.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/apollo/people-search",
+          "method": "POST",
+          "price": {
+            "amount": "0.02",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {
+            "q_keywords": "string — role title + key skills. Never combine with person_titles.",
+            "person_locations": "string[] — city/region names, e.g. [\"San Francisco\"]",
+            "per_page": "number — use 20 for first pass"
+          },
+          "source": {
+            "discoveredAt": "2026-05-14T18:00:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-apollo-enrich",
+      "type": "x402",
+      "position": { "x": 340, "y": 290 },
+      "data": {
+        "label": "Apollo People Enrich (parallel × 20)",
+        "description": "Resolve obfuscated search results into full profiles with verified email. Pass the id from people-search. Run in parallel — one call per candidate. Returns full name, email, email_status, title, company, LinkedIn URL. Only trust email when email_status === 'verified'. $0.0495 per call × 20 = ~$0.99.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/apollo/people-enrich",
+          "method": "POST",
+          "price": {
+            "amount": "0.0495",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {
+            "id": "string — Apollo person ID from people-search result"
+          },
+          "source": {
+            "discoveredAt": "2026-05-14T18:00:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "x402-hunter-verify",
+      "type": "x402",
+      "position": { "x": 340, "y": 490 },
+      "data": {
+        "label": "Hunter Email Verifier",
+        "description": "Verify email deliverability before outreach. Keep only result === 'deliverable'. Drop 'undeliverable' or disposable emails. Mark 'risky' + accept_all as 'catch-all — test before bulk send'. Also check data/sent_log.md and skip any email already logged. $0.03 per call × ~15 = ~$0.45.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableenrich.dev",
+          "path": "/api/hunter/email-verifier",
+          "method": "POST",
+          "price": {
+            "amount": "0.03",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {
+            "email": "string — candidate email from Apollo enrich"
+          },
+          "source": {
+            "discoveredAt": "2026-05-14T18:00:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "instruction-rank",
+      "type": "instruction",
+      "position": { "x": 340, "y": 690 },
+      "data": {
+        "label": "Rank Candidates 0-10",
+        "type": "instruction",
+        "instruction": "Score each verified candidate 0-10 against the role brief:\n- Current title matches role exactly → weight 3\n- Years of relevant experience ≥ min → weight 2\n- Location match (if specified) → weight 2\n- Required skills evident in profile → weight 2\n- Company stage match → weight 1\n\nSort descending. Keep top 10. Break ties by most recent role start date. Skip any candidate whose email already appears in data/sent_log.md.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "instruction-confirm",
+      "type": "instruction",
+      "position": { "x": 340, "y": 890 },
+      "data": {
+        "label": "Confirmation Gate (REQUIRED — never skip)",
+        "type": "instruction",
+        "instruction": "Show the user:\n1. A ranked table of top 10 candidates with name, current role, company, email, and score\n2. A draft outreach email for each candidate — personalized 3-sentence format:\n   Subject: Excited about you for our {{JOB_TITLE}} role\n   'Hi {{FIRST_NAME}}, I came across your profile and was impressed by your work as {{CURRENT_TITLE}} at {{CURRENT_COMPANY}} — exactly the kind of background we're looking for. We're hiring a {{JOB_TITLE}} at {{HIRING_COMPANY}} and I think you'd be a great fit. Would you be open to a quick 20-minute call this week? Best, {{RECRUITER_NAME}}'\n\nWait for explicit user approval before sending anything. Options: approve all, approve specific candidates, edit an email, or cancel.",
+        "status": "idle",
+        "config": {}
+      }
+    },
+    {
+      "id": "x402-stableemail-send",
+      "type": "x402",
+      "position": { "x": 340, "y": 1090 },
+      "data": {
+        "label": "StableEmail Send (per approved candidate)",
+        "description": "Send personalized outreach email for each approved candidate. Always set replyTo to the recruiter's email. Send HTML + text together for best deliverability. Sends from relay@stableemail.dev. Log every successful send to data/sent_log.md immediately. $0.02 per email × ~10 = ~$0.20.",
+        "type": "x402",
+        "config": {},
+        "status": "idle",
+        "spec": {
+          "kind": "x402",
+          "origin": "https://stableemail.dev",
+          "path": "/api/send",
+          "method": "POST",
+          "price": {
+            "amount": "0.02",
+            "asset": "USDC",
+            "chain": "base"
+          },
+          "inputSchema": {
+            "to": "string[] — [candidate email]",
+            "subject": "string — email subject line",
+            "html": "string — HTML email body",
+            "text": "string — plain-text email body",
+            "replyTo": "string — recruiter reply-to email (REQUIRED)"
+          },
+          "source": {
+            "discoveredAt": "2026-05-14T18:00:00.000Z",
+            "via": "manual"
+          }
+        }
+      }
+    },
+    {
+      "id": "output-report",
+      "type": "output",
+      "position": { "x": 340, "y": 1290 },
+      "data": {
+        "label": "Candidate Report + Sent Log",
+        "type": "output",
+        "description": "Markdown report: table of all candidates contacted (name, current role, company, email, sent?), list of skipped candidates with reasons, cost summary table (Apollo search + enrich + Hunter verify + StableEmail send + total USDC). Also append each successful send to data/sent_log.md: | email | name | role | date | run-id |",
+        "status": "idle",
+        "config": {}
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "purpose-recruit-email", "target": "input-role",             "type": "animated" },
+    { "id": "e2", "source": "input-role",             "target": "x402-apollo-search",    "type": "animated" },
+    { "id": "e3", "source": "x402-apollo-search",     "target": "x402-apollo-enrich",    "type": "animated" },
+    { "id": "e4", "source": "x402-apollo-enrich",     "target": "x402-hunter-verify",    "type": "animated" },
+    { "id": "e5", "source": "x402-hunter-verify",     "target": "instruction-rank",      "type": "animated" },
+    { "id": "e6", "source": "instruction-rank",       "target": "instruction-confirm",   "type": "animated" },
+    { "id": "e7", "source": "instruction-confirm",    "target": "x402-stableemail-send", "type": "animated" },
+    { "id": "e8", "source": "x402-stableemail-send",  "target": "output-report",         "type": "animated" }
+  ],
+  "createdAt": "2026-05-14T18:00:00.000Z",
+  "updatedAt": "2026-05-14T18:00:00.000Z"
+}
