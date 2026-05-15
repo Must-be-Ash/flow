@@ -28,16 +28,32 @@ function StatusIcon({ status }: { status: ChatMessage["status"] }) {
   }
 }
 
-function StatusLabel({ status }: { status: ChatMessage["status"] }) {
+function StatusLabel({ status, onDismiss }: { status: ChatMessage["status"]; onDismiss?: () => void }) {
   switch (status) {
     case "pending":
       return <span className="text-amber-500">Queued</span>;
     case "processing":
-      return <span className="text-blue-500">Claude is working...</span>;
+      return <span className="text-blue-500">Working...</span>;
     case "done":
-      return <span className="text-green-500">Done</span>;
+      return (
+        <button
+          className="text-green-500 hover:text-green-400 transition-colors cursor-pointer"
+          onClick={onDismiss}
+          type="button"
+        >
+          Done ✕
+        </button>
+      );
     case "error":
-      return <span className="text-red-500">Error</span>;
+      return (
+        <button
+          className="text-red-500 hover:text-red-400 transition-colors cursor-pointer"
+          onClick={onDismiss}
+          type="button"
+        >
+          Error ✕
+        </button>
+      );
   }
 }
 
@@ -49,60 +65,57 @@ export function ChatBar() {
   const setRefreshCount = useSetAtom(workflowRefreshCountAtom);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Poll for status updates when there are active messages
+  // Always poll — picks up messages from any source (chat bar, Create Skill button, etc.)
   const pollStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/chat");
       if (res.ok) {
         const msgs: ChatMessage[] = await res.json();
-
-        // Check if any message just completed — trigger a canvas refresh
         setMessages((prev) => {
-          const newlyDone = msgs.filter((m) =>
-            m.status === "done" &&
-            prev.find((p) => p.id === m.id && p.status !== "done")
+          const newlyDone = msgs.filter(
+            (m) => m.status === "done" && prev.find((p) => p.id === m.id && p.status !== "done"),
           );
           if (newlyDone.length > 0) {
-            // Defer to avoid calling setState on WorkflowEditor during ChatBar's render
             setTimeout(() => setRefreshCount((c) => c + 1), 0);
           }
           return msgs;
         });
-
-        // Stop polling if all messages are done/error
-        const hasActive = msgs.some((m) => m.status === "pending" || m.status === "processing");
-        if (!hasActive && pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
       }
     } catch {
       // ignore
     }
   }, [setRefreshCount]);
 
-  // Start polling when we have active messages
-  useEffect(() => {
-    const hasActive = messages.some((m) => m.status === "pending" || m.status === "processing");
-    if (hasActive && !pollRef.current) {
-      pollRef.current = setInterval(pollStatus, 2000);
-    }
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
-  }, [messages, pollStatus]);
-
-  // Initial load
   useEffect(() => {
     pollStatus();
+    pollRef.current = setInterval(pollStatus, 2000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [pollStatus]);
+
+  // Auto-dismiss done/error cards after 5 seconds
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    for (const msg of messages) {
+      if ((msg.status === "done" || msg.status === "error") && !dismissed.has(msg.id)) {
+        timers.push(setTimeout(() => setDismissed((prev) => new Set([...prev, msg.id])), 5000));
+      }
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [messages, dismissed]);
+
+  const dismiss = (id: string) => setDismissed((prev) => new Set([...prev, id]));
+
+  const cancel = async (id: string) => {
+    await fetch(`/api/chat?id=${id}`, { method: "DELETE" });
+    dismiss(id);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;
@@ -124,10 +137,7 @@ export function ChatBar() {
         const msg: ChatMessage = await res.json();
         setMessages((prev) => [...prev, msg]);
         setInput("");
-        // Start polling
-        if (!pollRef.current) {
-          pollRef.current = setInterval(pollStatus, 2000);
-        }
+        if (inputRef.current) inputRef.current.style.height = "20px";
       }
     } catch {
       // ignore
@@ -136,9 +146,9 @@ export function ChatBar() {
     }
   };
 
-  // Only show messages for the current workflow (or no workflow)
+  // Only show messages for the current workflow (or no workflow), excluding dismissed
   const relevantMessages = messages.filter(
-    (m) => !m.workflowId || !workflowId || m.workflowId === workflowId
+    (m) => !dismissed.has(m.id) && (!m.workflowId || !workflowId || m.workflowId === workflowId)
   );
 
   // Only show recent active or just-completed messages (last 3)
@@ -160,7 +170,17 @@ export function ChatBar() {
               <div className="flex items-center gap-2">
                 <StatusIcon status={msg.status} />
                 <span className="truncate flex-1 text-muted-foreground">{msg.message}</span>
-                <StatusLabel status={msg.status} />
+                {(msg.status === "pending" || msg.status === "processing") && (
+                  <button
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    onClick={() => cancel(msg.id)}
+                    title="Cancel"
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                )}
+                <StatusLabel status={msg.status} onDismiss={() => dismiss(msg.id)} />
               </div>
               {msg.response && (
                 <p className="mt-1 text-[11px] text-foreground pl-5 line-clamp-2">
@@ -184,13 +204,17 @@ export function ChatBar() {
               </span>
             </div>
           )}
-          <input
+          <textarea
             ref={inputRef}
-            autoComplete="one-time-code"
-            className="bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground w-full"
+            autoComplete="off"
+            className="bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground w-full resize-none leading-5 max-h-40 overflow-y-auto"
             disabled={sending}
             name="flow-chat-input"
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -198,6 +222,8 @@ export function ChatBar() {
               }
             }}
             placeholder={selectedNode ? `Ask about "${selectedNode.data.label || selectedNode.data.type}"...` : "Ask Claude to edit this workflow..."}
+            rows={1}
+            style={{ height: "20px" }}
             value={input}
           />
         </div>

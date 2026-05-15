@@ -224,7 +224,7 @@ function EmptyNodeSearch({ nodeId }: { nodeId: string }) {
   };
 
   return (
-    <div className="flex w-full flex-col nodrag" onClick={(e) => e.stopPropagation()}>
+    <div className="flex w-full flex-col nodrag overflow-hidden rounded-md" onClick={(e) => e.stopPropagation()}>
       {/* Service search section */}
       <div className="p-3 space-y-2 rounded-t-md bg-gradient-to-br from-[#b0b0b0] via-[#888888] to-[#707070] dark:from-[#686868] dark:via-[#444444] dark:to-[#2e2e2e]">
         <div className="flex items-center gap-1.5 mb-2">

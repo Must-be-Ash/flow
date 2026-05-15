@@ -1065,41 +1065,62 @@ function DuplicateButton({
 // Download Button Component
 // Single "Create Skill" button — queues the brain to produce the full skill package
 function CreateSkillButton({ state }: { state: ReturnType<typeof useWorkflowState> }) {
-  const [queued, setQueued] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Poll until the job finishes, then clear loading state
+  const startPolling = (id: string) => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch("/api/chat");
+        if (!res.ok) return;
+        const msgs: { id: string; status: string }[] = await res.json();
+        const job = msgs.find((m) => m.id === id);
+        if (!job || job.status === "done" || job.status === "error") {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setJobId(null);
+        }
+      } catch {
+        // ignore
+      }
+    }, 2000);
+  };
+
+  // Clean up on unmount
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const handleCreateSkill = async () => {
     if (!state.currentWorkflowId || state.nodes.length === 0) return;
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "create_skill",
-          workflowId: state.currentWorkflowId,
-        }),
+        body: JSON.stringify({ kind: "create_skill", workflowId: state.currentWorkflowId }),
       });
       if (res.ok) {
-        setQueued(true);
-        toast.success("Claude is creating your skill — check the chat bar for progress");
-        setTimeout(() => setQueued(false), 5000);
+        const msg: { id: string } = await res.json();
+        setJobId(msg.id);
+        startPolling(msg.id);
       }
     } catch {
       toast.error("Failed to queue skill creation");
     }
   };
 
+  const busy = jobId !== null;
+
   return (
     <Button
       className="gap-1.5 border bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 text-xs font-medium px-3"
-      disabled={state.nodes.length === 0 || state.isGenerating || queued}
+      disabled={state.nodes.length === 0 || state.isGenerating || busy}
       onClick={handleCreateSkill}
       size="sm"
       title="Ask Claude to create the complete skill package from this draft"
       variant="default"
     >
-      {queued ? (
-        <><Loader2 className="size-3.5 animate-spin" />Queued...</>
+      {busy ? (
+        <><Loader2 className="size-3.5 animate-spin" />Creating...</>
       ) : (
         <><Download className="size-3.5" />Create Skill</>
       )}

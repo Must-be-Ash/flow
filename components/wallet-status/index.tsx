@@ -36,6 +36,12 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function fmt(value: number | string): string {
+  const n = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(n)) return "0";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+}
+
 export function WalletStatus() {
   const [status, setStatus] = useState<WalletStatusData | null>(null);
   const [balance, setBalance] = useState<WalletBalanceData | null>(null);
@@ -108,10 +114,7 @@ export function WalletStatus() {
         >
           <Wallet className={cn("size-3.5", hasBalance ? "text-green-500" : "text-amber-500")} />
           <span className="hidden sm:inline font-mono">
-            {total} {balance?.asset ?? "USDC"}
-          </span>
-          <span className="hidden lg:inline text-muted-foreground">
-            {status.address ? truncateAddress(status.address) : ""}
+            {fmt(total)} {balance?.asset ?? "USDC"}
           </span>
         </button>
       </PopoverTrigger>
@@ -147,7 +150,7 @@ export function WalletStatus() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Total Balance</span>
               <span className="font-mono font-medium">
-                ${total} {balance?.asset ?? "USDC"}
+                {fmt(total)} {balance?.asset ?? "USDC"}
               </span>
             </div>
           </div>
@@ -168,7 +171,7 @@ export function WalletStatus() {
                     "font-mono",
                     account.balance > 0 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
                   )}>
-                    ${account.balance} USDC
+                    {fmt(account.balance)} USDC
                   </span>
                 </div>
               ))}
