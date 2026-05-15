@@ -2,7 +2,7 @@
 
 Flow is a visual skill drafting tool. Users build natural-language "programs" on a canvas (Purpose, Service, Instruction, Decision, Input, Output nodes) and export them as skill bundles that an LLM executes as instructions.
 
-**You are the brain.** The user drafts visually in the app, you act on their requests via MCP tools and chat messages.
+**You are the brain.** The app's API route (`app/api/chat/route.ts`) runs you autonomously via `@anthropic-ai/claude-agent-sdk` whenever the user types in the chat bar or clicks "Create Skill". You act on requests via MCP tools — no manual `/loop` required.
 
 ---
 
@@ -20,43 +20,6 @@ The `flow` MCP server connects you to the running app at `http://localhost:3000`
 | `remove_node` | Remove a node and its edges |
 | `export_skill_bundle` | Get the export download URL |
 | `search_services` | Find x402 services for service nodes |
-| `get_pending_chat` | Check for chat messages from the UI |
-| `respond_to_chat` | Reply — user sees it as a status notification |
-| `cleanup_chat` | Remove completed messages (call at start of each tick) |
-
----
-
-## Chat bridge loop
-
-When the user asks you to watch the app's chat bar, run this loop:
-
-```
-/loop watch for pending chat messages from the Flow UI using get_pending_chat.
-At the start of each tick, call cleanup_chat to remove completed messages.
-For each pending message, check the `kind` field:
-
-If kind === "chat" (workflow editing):
-  1. Call get_workflow with the workflowId to understand the current state
-  2. Make requested changes using update_workflow, add_node, or remove_node
-  3. Call respond_to_chat with messageId and a brief summary
-
-If kind === "test_endpoint" (the user hit "Ask Claude to test this"):
-  1. Read testEndpoint: { url, method, prompt, price } from the message
-  2. Use mcp__agentcash__check_endpoint_schema on the url to understand input schema, auth mode, protocols
-  3. Use mcp__agentcash__get_balance to check available funds across networks
-  4. Call mcp__agentcash__fetch with the url, method, and a body built from the prompt + schema field names
-  5. If the response has jobId + status:pending, discover and poll the correct status URL
-     (check /openapi.json or /llm.txt at the origin for the right polling path)
-  6. Call respond_to_chat with:
-     - messageId: the message ID
-     - response: "Generated image/video — [brief description]"
-     - testResult: { url: "...", imageUrl: "...", or the full JSON }
-     The UI will render images/videos automatically from testResult.
-
-Keep looping until stopped.
-```
-
-The user types in the canvas chat bar → you see it via `get_pending_chat` → you act → they see your response as a status notification. Completed messages are cleaned up so `.flow/chat.jsonl` stays small.
 
 ---
 

@@ -121,21 +121,17 @@ Full instructions for handling exported bundles are in `AGENT.md`.
 
 ---
 
-## Live canvas brain loop
+## How chat and skill creation work
 
-Start this once per session to watch the chat bar and process requests in real-time:
+The app handles all chat bar requests and skill creation autonomously via the Agent SDK (`app/api/chat/route.ts`). When the user types in the chat bar or clicks "Create Skill", the Next.js API spins up a `query()` call from `@anthropic-ai/claude-agent-sdk` with the appropriate MCP servers. **No `/loop` required.**
 
-```
-/loop At the start of each tick call cleanup_chat to remove completed messages, then call get_pending_chat. For each pending message:
+Three job kinds run automatically:
 
-kind=chat: Call get_workflow(workflowId), make the requested changes with update_workflow/add_node/remove_node, respond_to_chat with a brief summary.
+- **`chat`** — Canvas edits. Uses flow MCP only (agentcash and all other tools are blocked to prevent Claude executing skills instead of drafting nodes).
+- **`test_endpoint`** — Probes endpoint schema then makes a paid call via agentcash. Polls for async results using `mcp__agentcash__fetch` (never plain fetch — status endpoints require SIWX auth).
+- **`create_skill`** — Full 7-step skill creation process from `AGENT.md`. Reads the draft, probes endpoints, invokes `/skill-creator`, builds the complete package.
 
-kind=test_endpoint: Call mcp__agentcash__check_endpoint_schema on the url. Call mcp__agentcash__get_balance. Call mcp__agentcash__fetch with the correct body. If jobId+pending returned, poll using mcp__agentcash__fetch (NEVER plain fetch — status endpoints need SIWX auth). Call respond_to_chat with response text and testResult data.
-
-kind=create_skill: Follow the full 7-step process in AGENT.md. Read the workflow draft, ask the user clarifying questions with AskUserQuestion, probe each endpoint schema (free), invoke /skill-creator, build the complete package (SKILL.md + references/ + assets/ + data/ as needed), respond_to_chat with what was created. Then install the skill: cp -r ~/<skill-slug>/plugins/<skill-slug>/skills/<skill-slug>/ ~/.claude/skills/<skill-slug>/
-
-Keep looping until stopped.
-```
+Progress streams into the UI in real-time. Jobs support cancellation via AbortController.
 
 ---
 
@@ -153,9 +149,6 @@ The `flow` MCP server connects to the running app at `http://localhost:3000`.
 | `remove_node` | Remove a node |
 | `export_skill_bundle` | Get the export URL |
 | `search_services` | Find x402 services |
-| `get_pending_chat` | Read chat bar messages |
-| `respond_to_chat` | Reply with text + optional testResult |
-| `cleanup_chat` | Remove done messages |
 
 ## AgentCash tools
 

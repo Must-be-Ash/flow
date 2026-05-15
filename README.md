@@ -47,13 +47,13 @@ npx agentcash balance
 
 ## Using Claude as the brain
 
-Flow works best with Claude Code acting as an intelligent co-creator. Claude can:
+Flow has a built-in autonomous agent (powered by `@anthropic-ai/claude-agent-sdk`) that handles requests from the canvas chat bar without any manual setup. It can:
 
-- **Edit your workflows** by reading your chat requests in real-time
-- **Test paid API endpoints** — paying via AgentCash, polling for results, and rendering images/video inline
-- **Create complete skill packages** from your visual draft — not just a SKILL.md, but a full installable package matching the quality of [recruit-skill](https://github.com/anthropics/recruit-skill) and [mail-skill](https://github.com/anthropics/mail-skill), including `references/endpoints.md`, `assets/output-template.md`, and `data/` for persistent state
+- **Edit your workflows** — add, remove, or update nodes from a plain English request
+- **Test paid API endpoints** — probe the schema, make a paid call via AgentCash, poll for async results, and render images/video inline
+- **Create complete skill packages** from your visual draft — not just a SKILL.md, but a full installable package including `references/endpoints.md`, `assets/output-template.md`, and `data/` for persistent state
 
-> `CLAUDE.md` at the project root contains Claude's full role and instructions. It is loaded automatically at the start of every Claude Code session — no setup needed beyond the one-time MCP registration below.
+> `CLAUDE.md` at the project root contains the agent's full role and instructions.
 
 ### Step 1 — Register the MCP server (once)
 
@@ -69,23 +69,7 @@ Restart Claude Code after running this.
 npm run dev
 ```
 
-### Step 3 — Start the brain loop
-
-Paste this into Claude Code to activate the live chat bridge:
-
-```
-/loop At the start of each tick call cleanup_chat to remove completed messages, then call get_pending_chat to check for new requests. For each pending message handle it based on kind:
-
-kind=chat: Call get_workflow(workflowId), understand what the user is asking, make changes with update_workflow/add_node/remove_node, then respond_to_chat with a brief summary.
-
-kind=test_endpoint: Read testEndpoint {url, method, prompt}. Call mcp__agentcash__check_endpoint_schema on the url to get the exact input schema. Call mcp__agentcash__get_balance to confirm funds. Call mcp__agentcash__fetch with the correct body built from the prompt and schema. If the result has a jobId+status:pending, discover the job status URL (check /openapi.json or /llm.txt at the origin) and poll with mcp__agentcash__fetch until done. Call respond_to_chat with response (brief text summary) and testResult (the actual data — imageUrl, videoUrl, or JSON) so the UI can render it.
-
-Keep looping until stopped.
-```
-
-Now type requests in the chat bar at the bottom of the canvas and Claude will respond in real-time.
-
-> **Tip**: `CLAUDE.md` at the project root contains Claude's full instructions and is loaded automatically at the start of every session.
+That's it — type requests in the chat bar at the bottom of the canvas and the built-in agent responds in real-time. No `/loop` required.
 
 ## How it works
 
@@ -139,7 +123,7 @@ npm run dev
 
 Once registered, Claude Code can list, read, create, edit, and export your skill drafts without you passing URLs. Type requests in the canvas chat bar and Claude will respond in real-time.
 
-See `AGENT.md` for the full agent instructions and loop command.
+See `AGENT.md` for the full skill creation process and exported bundle format.
 
 ## Architecture
 
@@ -147,6 +131,7 @@ See `AGENT.md` for the full agent instructions and loop command.
 - **Canvas**: @xyflow/react v12
 - **State**: Jotai with autosave/undo/redo
 - **UI**: shadcn/ui + Tailwind v4
+- **Agent**: `@anthropic-ai/claude-agent-sdk` — autonomous chat/skill-creation jobs in the API route
 - **Discovery**: AgentCash — search, discover, and probe x402 endpoints
 - **Persistence**: Local JSON files under `.flow/`
 - **Export**: Skill bundles matching the Claude Code skill package format
