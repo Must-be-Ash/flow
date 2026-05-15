@@ -47,15 +47,16 @@ Call `get_workflow(workflowId)` to read all nodes and edges. Understand:
 
 ### Step 2 — Ask clarifying questions
 
-Use `AskUserQuestion` to fill in anything the draft left ambiguous. Ask about:
+Read the nodes carefully and make sensible assumptions only when the draft leaves open
+
 - Steps that need more detail (how exactly should the agent behave?)
 - Error handling (what happens if an API fails or returns empty results?)
 - Confirmation gates (should the agent always confirm before taking irreversible actions?)
 - Data persistence (what should be saved between runs? In what format?)
-- Output format (report, message, file, image shown inline?)
+- What's the appropriate output format (report, message, file, image shown inline?)
 - Any constraints (geographic limits, single vs multiple recipients, etc.)
 
-Do not skip this step. Ambiguity now produces a skill that fails in production.
+Document your assumptions in the final response so the user knows what choices were made.
 
 ### Step 3 — Probe each endpoint (free, no payment)
 
