@@ -1,5 +1,7 @@
 # Flow
 
+> **Not maintained.** x402 and the services this uses may have changed since it was built; check the latest x402 docs before relying on it.
+
 Create Claude Code skills visually — no coding required.
 
 Flow is a visual skill drafting tool for non-technical users. Build natural-language "programs" as connected blocks on a canvas, then export a skill bundle that Claude Code can follow as instructions.
